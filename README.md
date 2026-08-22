@@ -163,4 +163,4 @@ Full model → `skills/feature-lifecycle/reference/engine-roster.md`.
 
 ## Provenance
 
-Extracted from the `apex` recipe of [`claude-skills`](https://github.com/simota/claude-skills) — renamed here for legibility — and made self-contained: the `_common/` protocol dependencies it relied on are distilled into `reference/contracts.md`. When the chain runs inside a repository that ships its own `_common/` protocol set, those originals are authoritative.
+Extracted from the `apex` recipe of [`agent-skills`](https://github.com/simota/agent-skills) — renamed here for legibility — and made self-contained: the `_common/` protocol dependencies it relied on are distilled into `reference/contracts.md`. When the chain runs inside a repository that ships its own `_common/` protocol set, those originals are authoritative.

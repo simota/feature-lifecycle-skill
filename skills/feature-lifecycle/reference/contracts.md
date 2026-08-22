@@ -3,7 +3,7 @@
 **Purpose:** The shared rules the chain depends on, carried inside the skill so it runs with no external contract directory. Everything a phase, gate, or spawn needs is here.
 **Read when:** Entering the loop gate, grading evidence, selecting the loop driver, spawning across an engine boundary, or emitting the run's self-assessment. Role-to-CLI binding and the headless invocation contract live in `reference/engine-roster.md`.
 
-**Provenance:** distilled from the `_common/` protocol set of the `claude-skills` repository (`LOOP_PRECONDITIONS`, `EVIDENCE_LADDER`, `PROJECT_LOCAL_SKILLS`, `SUBAGENT` / `CLI_COMPATIBILITY`, `WORK_GATE`, `HANDOFF`, `GIT_GUIDELINES`, `OPERATIONAL`). The chain carries its own copy on purpose: a standalone skill that names a contract it cannot open has no contract. When the chain runs *inside* that repository, its `_common/` originals are authoritative and this file defers to them.
+**Provenance:** distilled from the `_common/` protocol set of the `agent-skills` repository (`LOOP_PRECONDITIONS`, `EVIDENCE_LADDER`, `PROJECT_LOCAL_SKILLS`, `SUBAGENT` / `CLI_COMPATIBILITY`, `WORK_GATE`, `HANDOFF`, `GIT_GUIDELINES`, `OPERATIONAL`). The chain carries its own copy on purpose: a standalone skill that names a contract it cannot open has no contract. When the chain runs *inside* that repository, its `_common/` originals are authoritative and this file defers to them.
 
 ## Contents
 - 1. Precedence

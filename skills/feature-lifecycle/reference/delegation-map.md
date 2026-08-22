@@ -19,7 +19,7 @@ Two things follow, and both are load-bearing:
 
 ## Delegation Table
 
-Names are those of the `claude-skills` ecosystem this skill was extracted from. Treat them as *candidate* names: a workspace that ships a differently-named skill for the same work is matched on the work, not the string. A row marked **no candidate claimed** is one the chain has no known specialist for — it is not a gap in the row, only in this table, and the chain performs it as it performs any undelegated row.
+Names are those of the `agent-skills` ecosystem this skill was extracted from. Treat them as *candidate* names: a workspace that ships a differently-named skill for the same work is matched on the work, not the string. A row marked **no candidate claimed** is one the chain has no known specialist for — it is not a gap in the row, only in this table, and the chain performs it as it performs any undelegated row.
 
 | Phase | Work role | Prefers, if installed | Its own fallback |
 |-------|-----------|----------------------|---------------------|
