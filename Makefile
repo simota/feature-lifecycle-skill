@@ -12,7 +12,7 @@ LINT       := python3 $(REPO)/tools/lint.py
 
 CLAUDE_DIR := $(HOME)/.claude/skills
 CODEX_DIR  := $(HOME)/.codex/skills
-AGY_DIR    := $(HOME)/.gemini/skills
+AGY_DIR    := $(HOME)/.gemini/antigravity-cli/skills
 
 .DEFAULT_GOAL := help
 
