@@ -1,0 +1,1191 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Feature Lifecycle · Chain Reference</title>
+<meta name="description" content="The nine phases, ten gates and three engine roles of the Feature Lifecycle Agent Skill — including every path that sends work back upstream.">
+<meta name="color-scheme" content="light dark">
+<meta property="og:title" content="Feature Lifecycle · Chain Reference">
+<meta property="og:description" content="One high-stakes feature, discovery to ship: nine phases, ten gates, three engine roles.">
+<meta property="og:type" content="website">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%9B%B0%EF%B8%8F%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=JetBrains+Mono:wght@400;600&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap">
+
+<style>
+:root{
+  --ground:#E7E9E4;
+  --surface:#F3F4F0;
+  --surface-2:#DDE0DA;
+  --ink:#141C22;
+  --muted:#5C6A70;
+  --faint:#8A959A;
+  --line:rgba(20,28,34,.16);
+  --line-soft:rgba(20,28,34,.08);
+  --gate:#9E3B26;
+  --on-gate:#F3F4F0;
+  --gate-bg:rgba(158,59,38,.10);
+  --engine:#14615C;
+  --engine-bg:rgba(20,97,92,.10);
+  --warn:#8C6714;
+  --warn-bg:rgba(140,103,20,.12);
+  --shadow:0 1px 0 rgba(20,28,34,.06);
+
+  --f-display:"Archivo",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  --f-body:"Zen Kaku Gothic New","Archivo",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --ground:#101519;
+    --surface:#171E23;
+    --surface-2:#1F272D;
+    --ink:#DBE2E2;
+    --muted:#8D9B9D;
+    --faint:#6C787B;
+    --line:rgba(219,226,226,.17);
+    --line-soft:rgba(219,226,226,.08);
+    --gate:#E07B5F;
+    --on-gate:#101519;
+    --gate-bg:rgba(224,123,95,.13);
+    --engine:#4FAEA5;
+    --engine-bg:rgba(79,174,165,.13);
+    --warn:#D2A63F;
+    --warn-bg:rgba(210,166,63,.14);
+    --shadow:0 1px 0 rgba(0,0,0,.35);
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#101519;
+  --surface:#171E23;
+  --surface-2:#1F272D;
+  --ink:#DBE2E2;
+  --muted:#8D9B9D;
+  --faint:#6C787B;
+  --line:rgba(219,226,226,.17);
+  --line-soft:rgba(219,226,226,.08);
+  --gate:#E07B5F;
+  --on-gate:#101519;
+  --gate-bg:rgba(224,123,95,.13);
+  --engine:#4FAEA5;
+  --engine-bg:rgba(79,174,165,.13);
+  --warn:#D2A63F;
+  --warn-bg:rgba(210,166,63,.14);
+  --shadow:0 1px 0 rgba(0,0,0,.35);
+}
+
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0;
+  background:var(--ground);
+  color:var(--ink);
+  font-family:var(--f-body);
+  font-size:15px;
+  line-height:1.75;
+  -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:1180px;margin:0 auto;padding:0 28px 96px}
+
+/* ---------- masthead ---------- */
+.mast{padding:56px 0 30px;border-bottom:1px solid var(--line)}
+.eyebrow{
+  font-family:var(--f-mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;
+  color:var(--gate);margin:0 0 14px
+}
+h1{
+  font-family:var(--f-display);font-weight:800;font-size:clamp(38px,6.4vw,72px);
+  line-height:.98;letter-spacing:-.025em;margin:0;text-wrap:balance
+}
+h1 .sub{display:block;font-size:clamp(15px,2vw,20px);font-weight:600;letter-spacing:.01em;color:var(--muted);margin-top:16px;line-height:1.5}
+.lede{max-width:66ch;color:var(--muted);margin:24px 0 0;font-size:15.5px}
+
+.facts{display:flex;flex-wrap:wrap;gap:0;margin:30px 0 0;border-top:1px solid var(--line-soft)}
+.fact{flex:1 1 150px;padding:16px 20px 14px;border-right:1px solid var(--line-soft)}
+.fact:last-child{border-right:0}
+.fact b{display:block;font-family:var(--f-display);font-weight:700;font-size:26px;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.fact span{font-size:11.5px;color:var(--faint);font-family:var(--f-mono);letter-spacing:.06em;text-transform:uppercase}
+
+/* ---------- nav ---------- */
+nav.jump{
+  position:sticky;top:0;z-index:20;background:var(--ground);
+  border-bottom:1px solid var(--line);margin-bottom:8px;
+  display:flex;gap:2px;overflow-x:auto;scrollbar-width:thin
+}
+nav.jump a{
+  font-family:var(--f-mono);font-size:11.5px;letter-spacing:.05em;text-transform:uppercase;
+  color:var(--muted);text-decoration:none;padding:13px 12px;white-space:nowrap;
+  border-bottom:2px solid transparent
+}
+nav.jump a:hover{color:var(--ink);border-bottom-color:var(--gate)}
+nav.jump a:focus-visible{outline:2px solid var(--gate);outline-offset:-3px}
+
+/* ---------- sections ---------- */
+section{padding:52px 0 8px;border-top:1px solid var(--line-soft);scroll-margin-top:56px}
+section:first-of-type{border-top:0}
+h2{
+  font-family:var(--f-display);font-weight:700;font-size:26px;letter-spacing:-.015em;
+  margin:0 0 6px;display:flex;align-items:baseline;gap:12px;text-wrap:balance
+}
+h2 .num{font-family:var(--f-mono);font-size:12px;font-weight:600;color:var(--gate);letter-spacing:.1em}
+.sec-note{color:var(--muted);max-width:74ch;margin:0 0 26px;font-size:14.5px}
+h3{font-family:var(--f-display);font-weight:700;font-size:16px;letter-spacing:.01em;margin:30px 0 10px}
+.sub-lab{margin:14px 0 8px;font-size:12px;font-family:var(--f-mono);letter-spacing:.1em;text-transform:uppercase;color:var(--faint);font-weight:600}
+
+/* ---------- figure ---------- */
+figure{margin:0 0 8px;padding:0}
+.scroll{overflow-x:auto;padding-bottom:6px}
+figure svg{display:block;min-width:760px;max-width:100%;height:auto;color:var(--ink)}
+figcaption{color:var(--faint);font-size:12.5px;margin-top:12px;max-width:78ch;line-height:1.65}
+
+/* ---------- two-col ---------- */
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:26px}
+@media(max-width:760px){.cols{grid-template-columns:1fr}}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:2px;padding:20px 22px 22px;box-shadow:var(--shadow)}
+.panel h3{margin-top:0}
+.panel ul{margin:0;padding-left:18px}
+.panel li{margin:6px 0;font-size:14px}
+.panel.no{border-left:3px solid var(--line)}
+.panel.yes{border-left:3px solid var(--gate)}
+
+/* ---------- controls ---------- */
+.controls{
+  display:flex;flex-wrap:wrap;align-items:center;gap:20px;
+  background:var(--surface);border:1px solid var(--line);border-radius:2px;padding:12px 16px;margin:0 0 26px
+}
+.seg{display:flex;border:1px solid var(--line);border-radius:2px;overflow:hidden}
+.seg button{
+  font-family:var(--f-mono);font-size:11.5px;letter-spacing:.07em;text-transform:uppercase;
+  background:transparent;color:var(--muted);border:0;border-right:1px solid var(--line);
+  padding:7px 14px;cursor:pointer
+}
+.seg button:last-child{border-right:0}
+.seg button[aria-pressed="true"]{background:var(--gate);color:var(--on-gate)}
+.seg button:focus-visible{outline:2px solid var(--gate);outline-offset:-2px}
+.ctl-label{font-family:var(--f-mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--faint)}
+.readout{font-family:var(--f-mono);font-size:12.5px;color:var(--muted);font-variant-numeric:tabular-nums;margin-left:auto}
+.readout b{color:var(--ink);font-weight:600}
+.switch{display:inline-flex;align-items:center;gap:8px;font-size:13px;cursor:pointer}
+.switch input{accent-color:var(--gate);width:15px;height:15px}
+
+/* ---------- phase cards ---------- */
+.phases{display:grid;gap:14px}
+.pc{
+  background:var(--surface);border:1px solid var(--line);border-radius:2px;
+  display:grid;grid-template-columns:112px 1fr 310px;box-shadow:var(--shadow)
+}
+@media(max-width:900px){.pc{grid-template-columns:1fr}}
+.pc.off{opacity:.34}
+.pc-id{
+  padding:18px 16px;border-right:1px solid var(--line-soft);
+  display:flex;flex-direction:column;gap:6px;justify-content:flex-start
+}
+@media(max-width:900px){.pc-id{border-right:0;border-bottom:1px solid var(--line-soft);flex-direction:row;align-items:center}}
+.pc-id .k{font-family:var(--f-mono);font-size:11px;font-weight:600;letter-spacing:.1em;color:var(--gate)}
+.pc-id .role{font-family:var(--f-mono);font-size:10.5px;letter-spacing:.04em;color:var(--engine);background:var(--engine-bg);padding:2px 6px;border-radius:2px;align-self:flex-start}
+.pc-body{padding:18px 22px;min-width:0}
+.pc-body h4{font-family:var(--f-display);font-weight:700;font-size:17px;margin:0 0 4px;letter-spacing:-.005em}
+.pc-body .focus{color:var(--muted);font-size:13.5px;margin:0 0 12px;line-height:1.65}
+.rows{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:6px}
+.rows li{
+  font-family:var(--f-mono);font-size:11.5px;padding:3px 8px;border:1px solid var(--line);
+  border-radius:2px;color:var(--ink);background:var(--ground)
+}
+.rows li[data-req="cond"]{color:var(--muted);border-style:dashed}
+.rows li.dim{opacity:.3}
+.rows li .q{color:var(--faint)}
+.pc-gate{padding:18px 20px;border-left:1px solid var(--line-soft);background:var(--gate-bg);min-width:0}
+@media(max-width:900px){.pc-gate{border-left:0;border-top:1px solid var(--line-soft)}}
+.pc-gate .lab{font-family:var(--f-mono);font-size:10px;letter-spacing:.13em;text-transform:uppercase;color:var(--gate);display:block;margin-bottom:7px}
+.pc-gate code{font-family:var(--f-mono);font-size:11.5px;line-height:1.6;color:var(--ink);word-break:break-word;display:block;background:transparent;padding:0}
+.pc-gate .fail{margin-top:10px;font-size:12px;color:var(--muted);line-height:1.6;border-top:1px dashed var(--line);padding-top:8px}
+.pc-gate .fail b{font-family:var(--f-mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);font-weight:600;display:block}
+.pc-gate .fail em{font-style:italic;color:var(--ink)}
+
+/* ---------- tables ---------- */
+.tw{overflow-x:auto;border:1px solid var(--line);border-radius:2px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;min-width:620px;font-size:13.5px}
+th,td{text-align:left;padding:10px 14px;border-bottom:1px solid var(--line-soft);vertical-align:top}
+thead th{
+  font-family:var(--f-mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--faint);font-weight:600;background:var(--surface-2);border-bottom:1px solid var(--line)
+}
+tbody tr:last-child td{border-bottom:0}
+code{font-family:var(--f-mono);font-size:12.5px;background:var(--surface-2);padding:1px 5px;border-radius:2px}
+.tw code{background:transparent;padding:0;color:var(--engine);font-size:12px}
+.num-c{font-variant-numeric:tabular-nums;white-space:nowrap}
+
+.tag{font-family:var(--f-mono);font-size:10.5px;letter-spacing:.05em;padding:2px 7px;border-radius:2px;white-space:nowrap}
+.tag.build{color:var(--gate);background:var(--gate-bg)}
+.tag.judge{color:var(--engine);background:var(--engine-bg)}
+.tag.breadth{color:var(--warn);background:var(--warn-bg)}
+.tag.hub{color:var(--muted);background:var(--surface-2)}
+
+pre{
+  font-family:var(--f-mono);font-size:12.5px;line-height:1.7;background:var(--surface);
+  border:1px solid var(--line);border-left:3px solid var(--engine);border-radius:2px;
+  padding:16px 18px;overflow-x:auto;margin:0
+}
+
+.callout{
+  border-left:3px solid var(--gate);background:var(--gate-bg);padding:14px 18px;margin:22px 0 0;
+  font-size:14px;line-height:1.7;border-radius:0 2px 2px 0
+}
+.callout b{font-weight:700}
+
+.rule-list{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+.rule-list li{padding-left:28px;position:relative;font-size:14px;line-height:1.7;color:var(--muted)}
+.rule-list li::before{
+  content:attr(data-n);position:absolute;left:0;top:2px;
+  font-family:var(--f-mono);font-size:10.5px;color:var(--gate);font-weight:600
+}
+.rule-list li b{color:var(--ink);font-weight:700}
+
+footer{border-top:1px solid var(--line);margin-top:56px;padding-top:22px;color:var(--faint);font-size:12.5px;line-height:1.8}
+footer code{background:transparent;padding:0}
+a{color:var(--gate)}
+a:focus-visible{outline:2px solid var(--gate);outline-offset:2px}
+@media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+<header class="mast">
+  <p class="eyebrow">Agent Skill / one feature, discovery → ship</p>
+  <h1>Feature Lifecycle<span class="sub">From an unstated need to a released change. One invocation, one feature.</span></h1>
+  <p class="lede">Nine phases, ten gates, three engine roles. Every phase emits a typed artifact and every boundary has a named gate. A failed gate returns to the phase that caused it — never forward with a note attached. The chain is expensive on purpose: the cheapest place to find out you built the wrong thing is before you build it.</p>
+  <div class="facts">
+    <div class="fact"><b>9</b><span>phases</span></div>
+    <div class="fact"><b>10</b><span>gates</span></div>
+    <div class="fact"><b>3</b><span>engine roles</span></div>
+    <div class="fact"><b>≤ 6</b><span>loop cycles</span></div>
+    <div class="fact"><b>11–30</b><span>agents / run</span></div>
+    <div class="fact"><b>1</b><span>human checkpoint</span></div>
+  </div>
+</header>
+
+<nav class="jump">
+  <a href="#overview">Overview</a>
+  <a href="#when">When to use</a>
+  <a href="#modes">Modes</a>
+  <a href="#phases">Phases</a>
+  <a href="#loop">Phase 6 loop</a>
+  <a href="#verify">Verification</a>
+  <a href="#engines">Engine roster</a>
+  <a href="#gates">Gate index</a>
+  <a href="#record">Run record</a>
+  <a href="#cost">Cost &amp; resume</a>
+  <a href="#traps">Gotchas</a>
+</nav>
+
+<!-- ========== 1. OVERVIEW ========== -->
+<section id="overview">
+  <h2><span class="num">01</span>The chain, including the way back</h2>
+  <p class="sec-note">Anyone can draw the forward path. What this figure exists to show is the <strong>return edges</strong> — where a split verdict, a No-Go risk gate, and a gap found by the acceptance verification each send the work. A phase advances only on its declared exit criterion; every other road leads upstream.</p>
+
+  <figure>
+    <div class="scroll">
+    <svg viewBox="0 0 1200 420" role="img" aria-label="Feature Lifecycle flow. Phase 0 Bootstrap leads to a boundary confirm, then Phase 1 Discovery, Phase 2 Ideate and Phase 3 Verdict, then Phase 4 Spec, Phase 5 Design, the Risk Gate, the Phase 6 loop, acceptance verification and Ship. A split verdict escalates to a human verdict and re-enters Phase 3; a No-Go risk gate returns to Phase 4; an acceptance gap re-enters Phase 6.">
+      <defs>
+        <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M0,1 L9,5 L0,9 z" fill="currentColor"/>
+        </marker>
+        <marker id="arG" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M0,1 L9,5 L0,9 z" fill="#9E3B26"/>
+        </marker>
+      </defs>
+
+      <text x="55" y="30" font-family="'JetBrains Mono',monospace" font-size="10" fill="currentColor" opacity=".55" letter-spacing=".04em">invoke</text>
+
+      <g stroke="currentColor" stroke-width="1.3" fill="none" marker-end="url(#ar)" opacity=".75">
+        <line x1="140" y1="48" x2="140" y2="93"/>
+        <line x1="600" y1="48" x2="600" y2="93"/>
+      </g>
+      <g font-family="'JetBrains Mono',monospace" font-size="9.5" fill="currentColor" opacity=".6" text-anchor="middle">
+        <text x="140" y="42">no goal</text>
+        <text x="600" y="42">goal supplied</text>
+      </g>
+
+      <g>
+        <rect x="745" y="12" width="170" height="34" rx="1" fill="none" stroke="currentColor" stroke-width="1.1" stroke-dasharray="4 3" opacity=".65"/>
+        <text x="830" y="34" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="11" fill="currentColor" opacity=".8">human verdict</text>
+      </g>
+      <g stroke="currentColor" stroke-width="1.2" fill="none" marker-end="url(#ar)" opacity=".7">
+        <polyline points="785,93 785,46"/>
+        <polyline points="875,46 875,93"/>
+      </g>
+      <g font-family="'JetBrains Mono',monospace" font-size="9" fill="currentColor" opacity=".6">
+        <text x="700" y="72" text-anchor="end">split →</text>
+        <text x="890" y="72">← re-enter</text>
+      </g>
+
+      <!-- ROW 1 -->
+      <g>
+        <rect x="55" y="93" width="170" height="56" rx="1" fill="none" stroke="currentColor" stroke-width="1.4"/>
+        <text x="70" y="116" font-family="Archivo,sans-serif" font-weight="700" font-size="13" fill="currentColor">P0 · BOOTSTRAP</text>
+        <text x="70" y="134" font-family="'JetBrains Mono',monospace" font-size="10" fill="currentColor" opacity=".6">scan → propose → score</text>
+
+        <rect x="285" y="93" width="170" height="56" rx="1" fill="#9E3B26" fill-opacity=".1" stroke="#9E3B26" stroke-width="1.4"/>
+        <text x="300" y="116" font-family="Archivo,sans-serif" font-weight="700" font-size="13" fill="#9E3B26">GATE · CONFIRM</text>
+        <text x="300" y="134" font-family="'JetBrains Mono',monospace" font-size="10" fill="#9E3B26" opacity=".85">the one human check</text>
+
+        <rect x="515" y="93" width="170" height="56" rx="1" fill="none" stroke="currentColor" stroke-width="1.4"/>
+        <text x="530" y="116" font-family="Archivo,sans-serif" font-weight="700" font-size="13" fill="currentColor">P1 · DISCOVER</text>
+        <text x="530" y="134" font-family="'JetBrains Mono',monospace" font-size="10" fill="currentColor" opacity=".6">demands + reuse scan</text>
+
+        <rect x="745" y="93" width="170" height="56" rx="1" fill="none" stroke="currentColor" stroke-width="1.4"/>
+        <text x="760" y="116" font-family="Archivo,sans-serif" font-weight="700" font-size="13" fill="currentColor">P2 · IDEATE</text>
+        <text x="760" y="134" font-family="'JetBrains Mono',monospace" font-size="10" fill="currentColor" opacity=".6">diamond, max 4 turns</text>
+
+        <rect x="975" y="93" width="170" height="56" rx="1" fill="#9E3B26" fill-opacity=".1" stroke="#9E3B26" stroke-width="1.4"/>
+        <text x="990" y="116" font-family="Archivo,sans-serif" font-weight="700" font-size="13" fill="#9E3B26">P3 · VERDICT</text>
+        <text x="990" y="134" font-family="'JetBrains Mono',monospace" font-size="10" fill="#9E3B26" opacity=".85">tri-engine, 3 voices</text>
+      </g>
+      <g stroke="currentColor" stroke-width="1.4" fill="none" marker-end="url(#ar)">
+        <line x1="225" y1="121" x2="281" y2="121"/>
+        <line x1="455" y1="121" x2="511" y2="121"/>
+        <line x1="685" y1="121" x2="741" y2="121"/>
+        <line x1="915" y1="121" x2="971" y2="121"/>
+      </g>
+      <g font-family="'JetBrains Mono',monospace" font-size="9" fill="currentColor" opacity=".6" text-anchor="middle">
+        <text x="253" y="112">goal</text>
+        <text x="483" y="112">approve</text>
+        <text x="713" y="112">demands</text>
+        <text x="943" y="112">options</text>
+      </g>
+      <g stroke="currentColor" stroke-width="1.2" fill="none" marker-end="url(#ar)" opacity=".6" stroke-dasharray="4 3">
+        <line x1="370" y1="149" x2="370" y2="172"/>
+      </g>
+      <text x="378" y="176" font-family="'JetBrains Mono',monospace" font-size="9" fill="currentColor" opacity=".6">reject → stop or reframe</text>
+
+      <g stroke="currentColor" stroke-width="1.4" fill="none" marker-end="url(#ar)">
+        <polyline points="1145,121 1172,121 1172,222 28,222 28,306 51,306"/>
+      </g>
+      <text x="1080" y="238" font-family="'JetBrains Mono',monospace" font-size="9" fill="currentColor" opacity=".6" text-anchor="end">verdict + AC seed + scope boundary</text>
+
+      <!-- ROW 2 -->
+      <g>
+        <rect x="55" y="278" width="170" height="56" rx="1" fill="none" stroke="currentColor" stroke-width="1.4"/>
+        <text x="70" y="301" font-family="Archivo,sans-serif" font-weight="700" font-size="13" fill="currentColor">P4 · SPEC</text>
+        <text x="70" y="319" font-family="'JetBrains Mono',monospace" font-size="10" fill="currentColor" opacity=".6">L0→L3 AC + measurement</text>
+
+        <rect x="285" y="278" width="170" height="56" rx="1" fill="none" stroke="currentColor" stroke-width="1.4"/>
+        <text x="300" y="301" font-family="Archivo,sans-serif" font-weight="700" font-size="13" fill="currentColor">P5 · DESIGN</text>
+        <text x="300" y="319" font-family="'JetBrains Mono',monospace" font-size="10" fill="currentColor" opacity=".6">Tech ‖ UX, in parallel</text>
+
+        <rect x="515" y="278" width="170" height="56" rx="1" fill="#9E3B26" fill-opacity=".1" stroke="#9E3B26" stroke-width="1.4"/>
+        <text x="530" y="301" font-family="Archivo,sans-serif" font-weight="700" font-size="13" fill="#9E3B26">GATE · RISK</text>
+        <text x="530" y="319" font-family="'JetBrains Mono',monospace" font-size="10" fill="#9E3B26" opacity=".85">four axes, parallel</text>
+
+        <rect x="745" y="278" width="170" height="56" rx="1" fill="none" stroke="currentColor" stroke-width="1.4"/>
+        <text x="760" y="301" font-family="Archivo,sans-serif" font-weight="700" font-size="13" fill="currentColor">P6 · LOOP</text>
+        <text x="760" y="319" font-family="'JetBrains Mono',monospace" font-size="10" fill="currentColor" opacity=".6">engine boundary · ≤ 6</text>
+
+        <rect x="975" y="278" width="170" height="56" rx="1" fill="#9E3B26" fill-opacity=".1" stroke="#9E3B26" stroke-width="1.4"/>
+        <text x="990" y="301" font-family="Archivo,sans-serif" font-weight="700" font-size="13" fill="#9E3B26">GATE · VERIFY</text>
+        <text x="990" y="319" font-family="'JetBrains Mono',monospace" font-size="10" fill="#9E3B26" opacity=".85">conformance + negative</text>
+      </g>
+      <g stroke="currentColor" stroke-width="1.4" fill="none" marker-end="url(#ar)">
+        <line x1="225" y1="306" x2="281" y2="306"/>
+        <line x1="455" y1="306" x2="511" y2="306"/>
+        <line x1="685" y1="306" x2="741" y2="306"/>
+        <line x1="915" y1="306" x2="971" y2="306"/>
+      </g>
+      <g font-family="'JetBrains Mono',monospace" font-size="9" fill="currentColor" opacity=".6" text-anchor="middle">
+        <text x="253" y="297">L3 AC</text>
+        <text x="483" y="297">design</text>
+        <text x="713" y="297">Go</text>
+        <text x="943" y="297">converged</text>
+      </g>
+
+      <g stroke="#9E3B26" stroke-width="1.5" fill="none" marker-end="url(#arG)">
+        <polyline points="600,334 600,372 140,372 140,338"/>
+      </g>
+      <text x="370" y="386" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="9.5" fill="#9E3B26">No-Go / demand↔reaction divergence → the originating phase</text>
+
+      <g stroke="#9E3B26" stroke-width="1.5" fill="none" marker-end="url(#arG)">
+        <polyline points="1060,278 1060,250 830,250 830,274"/>
+      </g>
+      <text x="945" y="244" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="9.5" fill="#9E3B26">gap list (re-entry ≤ 2)</text>
+
+      <g stroke="currentColor" stroke-width="1.4" fill="none" marker-end="url(#ar)">
+        <line x1="1060" y1="334" x2="1060" y2="386"/>
+      </g>
+      <g>
+        <rect x="975" y="388" width="170" height="26" rx="1" fill="currentColor" fill-opacity=".08" stroke="currentColor" stroke-width="1.4"/>
+        <text x="1060" y="406" text-anchor="middle" font-family="Archivo,sans-serif" font-weight="700" font-size="12" fill="currentColor">SHIP · rollback rehearsed</text>
+      </g>
+    </svg>
+    </div>
+    <figcaption>Solid edges advance; oxide-red edges send work back. A 1-1-1 split at <code>P3</code> leaves for a human verdict; a Risk-Gate No-Go returns to Phase 4 for a spec defect or to the failing track for a design defect. An acceptance gap re-enters Phase 6 as a gap list, bounded to two re-entries before the user decides. Phase 5 → 6 is both a phase boundary and an <strong>engine boundary</strong>: nothing crosses it except the loop contract.</figcaption>
+  </figure>
+
+  <div class="callout"><b>Convergence is not correctness.</b> A loop that stops producing changes has only proven that it passes its own tests. What guards Ship is the independent acceptance verification, never the loop's own exit reason.</div>
+</section>
+
+<!-- ========== 2. WHEN ========== -->
+<section id="when">
+  <h2><span class="num">02</span>When this is the right chain</h2>
+  <p class="sec-note">Feature Lifecycle is opt-in, never a default. It is for the case where an upstream gap — a missed user need, a weak spec, a hidden architecture risk, UX friction — is materially costly to discover <em>after</em> implementation. When that is not true, a lighter chain is the correct chain.</p>
+  <div class="cols">
+    <div class="panel yes">
+      <h3>Use it when at least 3 apply</h3>
+      <ul>
+        <li>New customer-facing feature with a UI surface — not a backend-only fix</li>
+        <li>Cross-team impact: business, engineering and design</li>
+        <li>Reversibility cost is high — DB migration, API contract change, brand-visible UX</li>
+        <li>Acceptance criteria are not pre-supplied and must be derived from user need</li>
+        <li>An architecture decision is required, not just an implementation</li>
+        <li>5+ files / 2+ modules / 2+ days estimated</li>
+      </ul>
+    </div>
+    <div class="panel no">
+      <h3>Route elsewhere when it is</h3>
+      <ul>
+        <li>A defect in shipped behavior — diagnose and fix, no discovery chain</li>
+        <li>One bounded capability whose shape is already settled — a single guided build</li>
+        <li>Spec and acceptance criteria only, no code</li>
+        <li>Decomposition and sequencing only, no execution</li>
+        <li>Design exploration without implementation</li>
+        <li>Executing a pre-authored multi-package plan</li>
+        <li>A behavior-preserving rewrite or port, where the oracle is the old behavior</li>
+        <li>Improving one already-correct slow layer against a number</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ========== 3. MODES ========== -->
+<section id="modes">
+  <h2><span class="num">03</span>Modes and dispatch</h2>
+  <p class="sec-note">The default mode is <code>AUTORUN_FULL</code>. There is exactly one human checkpoint — the Phase 0 boundary confirm. Downstream, only an internal gate, the loop circuit breaker, the engine-availability check, or the budget ceiling stops the run.</p>
+
+  <div class="cols">
+    <div>
+      <h3>Subcommands</h3>
+      <pre>feature-lifecycle &lt;description&gt;  # goal supplied → Phase 1
+feature-lifecycle                # autonomous → Phase 0
+feature-lifecycle bootstrap      # explicit form (alias: auto)
+feature-lifecycle resume         # from the last checkpoint
+
+# optional arguments
+scope=Lite|Standard|Full  ui=  api_change=
+db_change=  budget=</pre>
+      <p class="sec-note" style="margin-top:14px">A bare invocation with a resumable checkpoint present <strong>never picks silently</strong>. It names the checkpoint and asks which — resume it, or start a fresh bootstrap. Resuming the wrong run and re-deriving a finished one cost the same as each other's mistake.</p>
+    </div>
+    <div>
+      <h3>Behaviour at the Phase 0 boundary confirm</h3>
+      <div class="tw">
+        <table>
+          <thead><tr><th>Mode</th><th>Behaviour</th></tr></thead>
+          <tbody>
+            <tr><td><code>INTERACTIVE</code></td><td>Always confirm; the user may edit the goal before proceeding</td></tr>
+            <tr><td><code>GUIDED</code></td><td>Always confirm; the user approves or aborts</td></tr>
+            <tr><td><code>AUTORUN</code></td><td>Explicit Y/N; <strong>defaults to abort</strong> on no response</td></tr>
+            <tr><td><code>AUTORUN_FULL</code></td><td>Show the goal with rationale, wait 60s for objection, then proceed. Any input inside the window aborts and re-runs Phase 0 with the objection as a hint</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ========== 4. PHASES ========== -->
+<section id="phases">
+  <h2><span class="num">04</span>Phase by phase</h2>
+  <p class="sec-note">Every row below is <strong>work the chain owns</strong>, never a skill it requires. Where a specialist is installed the chain delegates to it; where none is, the chain performs the row itself against the identical exit gate. A missing specialist changes who does the work, never whether the gate is passed. Dashed chips are conditional rows.</p>
+
+  <div class="controls">
+    <span class="ctl-label">Profile</span>
+    <div class="seg" id="segProfile" role="group" aria-label="Cost profile">
+      <button type="button" data-p="lite" aria-pressed="false">Lite</button>
+      <button type="button" data-p="standard" aria-pressed="true">Standard</button>
+      <button type="button" data-p="full" aria-pressed="false">Full</button>
+    </div>
+    <label class="switch"><input type="checkbox" id="bootChk"> Autonomous mode (include Phase 0)</label>
+    <span class="readout">est. agents <b id="agentCount">17–22</b> · <span id="profNote">all phases active</span></span>
+  </div>
+
+  <div class="phases" id="phaseList">
+
+    <article class="pc" data-phase="p0">
+      <div class="pc-id"><span class="k">P0</span><span class="role">breadth + hub</span></div>
+      <div class="pc-body">
+        <h4>Bootstrap — autonomous goal discovery</h4>
+        <p class="focus">Scan project state and external signals, synthesise 3–5 candidate goals, score them with ICE / RICE / WSJF, and select one. On a greenfield repo with no external source configured, fall back to "propose from the project scan only" and flag every candidate <code>confidence: low</code> — the fallback is declared, never silent.</p>
+        <ul class="rows">
+          <li>project-scan</li>
+          <li data-req="cond">user-signal<span class="q">?</span></li>
+          <li data-req="cond">metric-signal<span class="q">?</span></li>
+          <li data-req="cond">competitor-gap<span class="q">?</span></li>
+          <li data-req="cond">session-replay<span class="q">?</span></li>
+          <li>goal-proposal</li>
+          <li>goal-scoring</li>
+          <li data-req="cond">advisory-check<span class="q">?</span></li>
+        </ul>
+      </div>
+      <div class="pc-gate">
+        <span class="lab">exit gate</span>
+        <code>exactly one auto_selected_goal, carrying evidence_refs and rejected_alternatives, boundary-confirmed</code>
+        <p class="fail"><b>on failure</b>No candidates → abort and suggest invoking with an explicit goal. All candidates below the ICE threshold → present the top 3 for manual selection. Boundary rejected → abort and re-run Phase 0 with the objection as a hint.</p>
+      </div>
+    </article>
+
+    <article class="pc" data-phase="p1">
+      <div class="pc-id"><span class="k">P1</span><span class="role">breadth</span></div>
+      <div class="pc-body">
+        <h4>Discovery — demand and reuse</h4>
+        <p class="focus">Synthetic user demands across 3+ personas, paired with the prompts that elicited them, plus an evidence anchor. On an existing product, a friction baseline of the current flow. On any existing repository, the <strong>reuse scan is mandatory</strong>.</p>
+        <ul class="rows">
+          <li>demand-modeling</li>
+          <li>evidence-validation</li>
+          <li data-req="cond">friction-baseline<span class="q">?</span></li>
+          <li data-req="cond">reuse-scan<span class="q">?</span></li>
+        </ul>
+      </div>
+      <div class="pc-gate">
+        <span class="lab">exit gate</span>
+        <code>the top-3 demands each carry both a persona rationale and an evidence anchor</code>
+        <p class="fail"><b>guards against</b>A second implementation of something the repo already ships. It is found in Phase 1 for the cost of a scan, or in Phase 6 for the cost of the whole loop.</p>
+      </div>
+    </article>
+
+    <article class="pc" data-phase="p2">
+      <div class="pc-id"><span class="k">P2</span><span class="role">hub</span></div>
+      <div class="pc-body">
+        <h4>Ideate — diamond thinking</h4>
+        <p class="focus">Expand → Propose → Evaluate → Subtract, bounded to four turns.</p>
+        <ul class="rows"><li>option-generation</li></ul>
+      </div>
+      <div class="pc-gate">
+        <span class="lab">exit gate</span>
+        <code>≥ 2 comparable decision candidates ready for the verdict</code>
+      </div>
+    </article>
+
+    <article class="pc" data-phase="p3">
+      <div class="pc-id"><span class="k">P3</span><span class="role">tri-engine</span></div>
+      <div class="pc-body">
+        <h4>Verdict — three voices, three engines</h4>
+        <p class="focus"><code>logic</code> — does the option hold up on its own terms: assumptions, failure modes, internal contradictions? <code>human-impact</code> — who does it help, who does it cost, what does the persona set actually do with it? <code>precedent</code> — what have comparable systems already learned about this shape? <strong>One voice per engine.</strong> Three seats on one model is one model disagreeing with itself. Skipped entirely when a Spec Handoff Packet supplied the direction.</p>
+        <ul class="rows"><li>deliberation</li></ul>
+      </div>
+      <div class="pc-gate">
+        <span class="lab">exit gate</span>
+        <code>the verdict carries (1) the chosen option (2) an AC seed (3) a scope boundary (4) failure conditions</code>
+        <p class="fail"><b>on failure</b>A 1-1-1 split escalates to human review, then re-enters Phase 3.</p>
+      </div>
+    </article>
+
+    <article class="pc" data-phase="p4">
+      <div class="pc-id"><span class="k">P4</span><span class="role">hub + judge</span></div>
+      <div class="pc-body">
+        <h4>Spec — L0 to L3, plus the measurement contract</h4>
+        <p class="focus">L0 Vision → L1 Requirements → L2 Team Detail → L3 Acceptance Criteria + traceability. <strong>The L3 AC set and the scope boundary are the two artifacts the whole downstream depends on</strong>: the loop contract is built from the ACs, and the verification's negative pass from the boundary. A vague boundary here is what makes scope creep unprovable later.</p>
+        <ul class="rows">
+          <li>spec-authoring</li>
+          <li data-req="cond" data-only="full">scope-cutting<span class="q">?</span></li>
+          <li data-req="cond" data-only="full">formal-spec<span class="q">?</span></li>
+          <li>measurement-contract</li>
+        </ul>
+      </div>
+      <div class="pc-gate">
+        <span class="lab">exit gate</span>
+        <code>traceability ≥ threshold (Full ≥95% / Standard ≥85% / Lite ≥70%) ∧ L3 ACs measurable and loop-consumable ∧ a measurement contract exists</code>
+        <p class="fail"><b>on failure</b>Below threshold → re-run with a scope downgrade or refined inputs. Where the demand is genuinely unmeasurable, record that as the contract, naming what would have to exist. An unmeasurable hypothesis stated as unmeasurable is honest; one stated as an impact estimate is not.</p>
+      </div>
+    </article>
+
+    <article class="pc" data-phase="p5">
+      <div class="pc-id"><span class="k">P5</span><span class="role">hub ‖ breadth</span></div>
+      <div class="pc-body">
+        <h4>Design — the Tech track ‖ the UX track</h4>
+        <p class="focus">The two tracks run in parallel and reconverge at one gate. UX internal pipeline: <code>ux-direction → design-tokens → [interaction-design ‖ microcopy ‖ motion-spec] → design-file-extraction? → prototype → friction-walkthrough</code>.</p>
+        <p class="sub-lab">Tech</p>
+        <ul class="rows">
+          <li>architecture-decision</li>
+          <li data-req="cond">api-design<span class="q">?</span></li>
+          <li data-req="cond">schema-design<span class="q">?</span></li>
+        </ul>
+        <p class="sub-lab">UX — where there is a UI surface</p>
+        <ul class="rows">
+          <li data-only="standard full">ux-direction</li>
+          <li data-only="standard full">design-tokens</li>
+          <li data-only="standard full">interaction-design</li>
+          <li data-only="standard full">microcopy</li>
+          <li data-req="cond" data-only="standard full">motion-spec<span class="q">?</span></li>
+          <li data-req="cond" data-only="full">design-file-extraction<span class="q">?</span></li>
+          <li data-only="standard full">prototype</li>
+          <li data-only="standard full">friction-walkthrough</li>
+          <li data-req="cond" data-only="full">i18n-strategy<span class="q">?</span></li>
+          <li data-req="cond" data-only="standard full">mockup-to-code<span class="q">?</span></li>
+        </ul>
+      </div>
+      <div class="pc-gate">
+        <span class="lab">risk gate · four axes, parallel</span>
+        <code>blast_radius.verdict ∈ {Go, Conditional-Go}<br>∧ failure_modes.high_rpn_count == 0<br>∧ friction.gate_pass<br>∧ security.unmitigated_high == 0</code>
+        <p class="fail"><b>on failure</b>No-Go → the originating phase: Phase 4 for a spec defect, the failing Phase 5 track for a design defect. Plus <strong>demand↔reaction closure</strong>: if the walkthrough's actual reaction diverges fatally from the predicted demand, return to Phase 4 for re-spec — <em>even when every axis nominally passes</em>.</p>
+      </div>
+    </article>
+
+    <article class="pc" data-phase="pgate">
+      <div class="pc-id"><span class="k">GATE</span><span class="role">judge ‖ breadth</span></div>
+      <div class="pc-body">
+        <h4>Risk Gate — four axes before a line of code is written</h4>
+        <p class="focus"><code>security-review</code> is <strong>required, not conditional</strong>. A change that touches no entry point, no persisted data and no dependency passes it in one pass by recording <code>no-surface</code> <em>with the evidence for that claim</em>. Making the row conditional would let it be skipped by exactly the judgment call it exists to make — and a feature whose own author believed it had no surface is the common shape of the finding.</p>
+        <ul class="rows">
+          <li>failure-mode-analysis</li>
+          <li>blast-radius-analysis</li>
+          <li>friction-walkthrough</li>
+          <li>security-review</li>
+        </ul>
+      </div>
+      <div class="pc-gate">
+        <span class="lab">pass criteria</span>
+        <code>High-RPN residuals = 0 (AP-class A needs all three layers: detection / prevention / recovery) · blast radius Go or Conditional-Go · emotional valence ≥ median ∧ dark patterns = 0 ∧ WCAG 3.0 Bronze ≥ 3.5 ∧ cognitive load in range · unmitigated high-severity findings = 0</code>
+      </div>
+    </article>
+
+    <article class="pc" data-phase="p6">
+      <div class="pc-id"><span class="k">P6</span><span class="role">build / judge / breadth</span></div>
+      <div class="pc-body">
+        <h4>Implementation loop — bounded, across an engine boundary</h4>
+        <p class="focus">Nothing crosses the Phase 5 → 6 boundary except the loop contract: L3 ACs + mitigations + friction signals + the declared cap. <strong>Not every in-loop row runs on <code>build</code></strong> — the loop is where maker ≠ checker has to hold, so review and tests are pushed off the building engine.</p>
+        <ul class="rows">
+          <li data-req="cond">loop-driver<span class="q">?</span></li>
+          <li>implementation</li>
+          <li data-only="standard full">frontend-implementation<span class="q">?</span></li>
+          <li data-req="cond" data-only="standard full">component-catalog<span class="q">?</span></li>
+          <li>code-review</li>
+          <li>test-authoring</li>
+          <li data-only="standard full">e2e-persona-tests<span class="q">?</span></li>
+          <li data-req="cond">instrumentation<span class="q">?</span></li>
+        </ul>
+      </div>
+      <div class="pc-gate">
+        <span class="lab">termination</span>
+        <code>ACCEPT · diminishing-returns (Δ &lt; ε) · cap-reached · BLOCK</code>
+        <p class="fail"><b>preconditions</b>The five-point loop precondition gate passes, <code>build</code> answers a spawn, <code>judge</code> is a different CLI from <code>build</code>, <code>agents.max_depth ≥ 2</code>, and the subagent tools are permitted. If any fails, never silently fall back — enter the degradation protocol.</p>
+      </div>
+    </article>
+
+    <article class="pc" data-phase="verify">
+      <div class="pc-id"><span class="k">VERIFY</span><span class="role">judge</span></div>
+      <div class="pc-body">
+        <h4>Acceptance verification — independent and two-sided</h4>
+        <p class="focus"><strong>Conformance:</strong> extract the L3 ACs from the spec, adversarially check the delivered implementation, emit a traceability matrix (AC → evidence → verdict). <strong>Negative pass:</strong> did the loop build anything the spec <em>forbade</em>? Walk <code>non_goals</code> and the Phase 3 scope boundary against the actual diff — new surfaces, dependencies, config, persisted state.</p>
+        <ul class="rows">
+          <li>acceptance-verification</li>
+          <li data-req="cond">integration-evidence<span class="q">?</span></li>
+        </ul>
+      </div>
+      <div class="pc-gate">
+        <span class="lab">exit gate</span>
+        <code>conformance ≥ threshold ∧ unmet_must_haves == 0 ∧ non_goal_violations == 0<br>(integration_evidence recorded either way: E5 | unavailable)</code>
+        <p class="fail"><b>on failure</b>Escalate the gap list — unmet ACs <em>and</em> out-of-scope additions — back to Phase 6, bounded to 2 re-entries, then to the user. Never ship with an unmet must-have AC, and never ship an unratified scope violation.</p>
+      </div>
+    </article>
+
+    <article class="pc" data-phase="ship">
+      <div class="pc-id"><span class="k">SHIP</span><span class="role">hub</span></div>
+      <div class="pc-body">
+        <h4>Ship — the reverse path deserves evidence too</h4>
+        <p class="focus">A rollback plan nobody has run is <code>E0</code> on the chain's own evidence ladder: a model asserting that a reversal would work. The forward path is gated with four axes and a two-sided verification while the reverse path is left as prose. Where the change includes a migration, exercise the down-path against production-shaped data.</p>
+        <ul class="rows">
+          <li>commit-and-pr</li>
+          <li>release-plan</li>
+          <li>rollback-rehearsal</li>
+        </ul>
+      </div>
+      <div class="pc-gate">
+        <span class="lab">exit gate</span>
+        <code>rollback_verified ∈ {true, declared-impossible(reason)} ∧ the Delivery Report is emitted</code>
+        <p class="fail"><b>note</b><code>declared-impossible(reason)</code> is a legitimate outcome and a materially different one from a plan that was simply never run. Collapsing the two is how an unrehearsed rollback ships looking rehearsed.</p>
+      </div>
+    </article>
+
+  </div>
+</section>
+
+<!-- ========== 5. LOOP ========== -->
+<section id="loop">
+  <h2><span class="num">05</span>Phase 6 — the per-cycle spawn sequence</h2>
+  <p class="sec-note">The loop is where maker ≠ checker has to hold. Implementation on <code>build</code>, review and tests on <code>judge</code>, long-flow E2E on <code>breadth</code>. The vertical jumps between lanes <em>are</em> the mechanism: a test written on the same engine that wrote the code is the nodding loop with an extra step.</p>
+
+  <figure>
+    <div class="scroll">
+    <svg viewBox="0 0 1180 360" role="img" aria-label="Phase 6 per-cycle spawn sequence. On the build lane, implementation and frontend-implementation run in parallel and join, then component-catalog. On the judge lane, code-review then test-authoring. On the breadth lane, e2e-persona-tests. Back on the build lane, instrumentation. If not converged, the cycle repeats.">
+      <defs>
+        <marker id="ar2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M0,1 L9,5 L0,9 z" fill="currentColor"/>
+        </marker>
+      </defs>
+
+      <g>
+        <rect x="20" y="34" width="1010" height="94" fill="#9E3B26" fill-opacity=".07"/>
+        <rect x="20" y="140" width="1010" height="68" fill="#14615C" fill-opacity=".07"/>
+        <rect x="20" y="220" width="1010" height="68" fill="#8C6714" fill-opacity=".09"/>
+      </g>
+      <g font-family="'JetBrains Mono',monospace" font-size="11" letter-spacing=".04em">
+        <text x="32" y="54" fill="#9E3B26" font-weight="600">build</text>
+        <text x="32" y="70" fill="currentColor" opacity=".5" font-size="9.5">codex CLI</text>
+        <text x="32" y="160" fill="#14615C" font-weight="600">judge</text>
+        <text x="32" y="176" fill="currentColor" opacity=".5" font-size="9.5">claude code</text>
+        <text x="32" y="240" fill="#8C6714" font-weight="600">breadth</text>
+        <text x="32" y="256" fill="currentColor" opacity=".5" font-size="9.5">agy</text>
+      </g>
+      <line x1="140" y1="26" x2="140" y2="296" stroke="currentColor" stroke-width="1" opacity=".2"/>
+
+      <g>
+        <rect x="160" y="46" width="140" height="28" rx="1" fill="none" stroke="currentColor" stroke-width="1.3"/>
+        <text x="230" y="65" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="10.5" fill="currentColor">implementation</text>
+        <rect x="160" y="86" width="140" height="28" rx="1" fill="none" stroke="currentColor" stroke-width="1.3" stroke-dasharray="4 3"/>
+        <text x="230" y="105" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="10" fill="currentColor" opacity=".8">frontend-impl?</text>
+        <line x1="150" y1="60" x2="150" y2="100" stroke="currentColor" stroke-width="1.3" opacity=".6"/>
+        <line x1="150" y1="60" x2="156" y2="60" stroke="currentColor" stroke-width="1.3" opacity=".6"/>
+        <line x1="150" y1="100" x2="156" y2="100" stroke="currentColor" stroke-width="1.3" opacity=".6"/>
+      </g>
+      <text x="230" y="36" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="9" fill="currentColor" opacity=".55">‖ parallel → join</text>
+
+      <g>
+        <rect x="340" y="66" width="140" height="28" rx="1" fill="none" stroke="currentColor" stroke-width="1.3" stroke-dasharray="4 3"/>
+        <text x="410" y="85" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="10" fill="currentColor" opacity=".8">component-catalog?</text>
+      </g>
+      <g>
+        <rect x="520" y="160" width="140" height="28" rx="1" fill="none" stroke="currentColor" stroke-width="1.3"/>
+        <text x="590" y="179" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="10.5" fill="currentColor">code-review</text>
+      </g>
+      <g>
+        <rect x="700" y="160" width="140" height="28" rx="1" fill="none" stroke="currentColor" stroke-width="1.3"/>
+        <text x="770" y="179" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="10.5" fill="currentColor">test-authoring</text>
+      </g>
+      <g>
+        <rect x="700" y="240" width="140" height="28" rx="1" fill="none" stroke="currentColor" stroke-width="1.3" stroke-dasharray="4 3"/>
+        <text x="770" y="259" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="10" fill="currentColor" opacity=".8">e2e-persona?</text>
+      </g>
+      <g>
+        <rect x="880" y="66" width="140" height="28" rx="1" fill="none" stroke="currentColor" stroke-width="1.3" stroke-dasharray="4 3"/>
+        <text x="950" y="85" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="10" fill="currentColor" opacity=".8">instrumentation?</text>
+      </g>
+
+      <g stroke="currentColor" stroke-width="1.3" fill="none" marker-end="url(#ar2)">
+        <polyline points="310,80 336,80"/>
+        <polyline points="480,80 500,80 500,174 516,174"/>
+        <polyline points="660,174 696,174"/>
+        <polyline points="770,188 770,206 690,206 690,254 696,254"/>
+        <polyline points="840,254 862,254 862,80 876,80"/>
+        <polyline points="1020,80 1058,80"/>
+      </g>
+      <g font-family="'JetBrains Mono',monospace" font-size="8.5" fill="currentColor" opacity=".55" text-anchor="middle">
+        <text x="323" y="74">join</text>
+        <text x="678" y="168">join</text>
+      </g>
+      <g font-family="'JetBrains Mono',monospace" font-size="10" fill="currentColor">
+        <text x="1064" y="72" opacity=".8">ACCEPT</text>
+        <text x="1064" y="88" opacity=".55">→ verification</text>
+      </g>
+
+      <g stroke="currentColor" stroke-width="1.3" fill="none" marker-end="url(#ar2)" stroke-dasharray="5 4">
+        <polyline points="950,94 950,320 230,320 230,118"/>
+      </g>
+      <text x="590" y="336" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="10" fill="currentColor" opacity=".65">not converged → next cycle, up to the ceiling for the build engine</text>
+    </svg>
+    </div>
+    <figcaption><code>spawn(role, …)</code> is the native subagent API when that role is the hub, and a headless invocation when it is not — <code>codex exec … -o &lt;abs path&gt;</code>, <code>claude -p … --output-format json</code>, or a pty-wrapped <code>agy -p</code>. <code>join</code> is <code>wait_agent</code> on the native path, a process wait plus an artifact read on the headless one. The driver audits via the subagents' return values: <code>convergence_detection</code>, <code>deduplication_guard</code>, <code>cost-per-completed-task</code>, <code>circuit_breaker</code>.</figcaption>
+  </figure>
+
+  <h3>The iteration ceiling is keyed to the <code>build</code> engine</h3>
+  <div class="tw">
+    <table>
+      <thead><tr><th><code>build</code> engine</th><th class="num-c">Ceiling</th><th>Why</th></tr></thead>
+      <tbody>
+        <tr><td>Codex CLI</td><td class="num-c">≤ 6</td><td>The default the cost profile is written against</td></tr>
+        <tr><td>agy</td><td class="num-c">≤ 6</td><td>Code-gen throughput is lower, so a cycle achieves less — the run needs the headroom, not less of it. What changes is the <strong>budget envelope</strong>, recomputed at agy's rates, never the safety bound</td></tr>
+        <tr><td>Claude Code</td><td class="num-c">≤ 4</td><td>Context isolation is weaker: in-loop spawns share a main session that accumulates rot, so drift arrives earlier in the cycle count. The tighter bound is about isolation, not speed</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="callout">A lower ceiling is not a penalty for a slower engine. Confusing the two produces the exact wrong move — <b>cutting cycles from the engine that needs more of them</b>.</div>
+</section>
+
+<!-- ========== 6. VERIFY ========== -->
+<section id="verify">
+  <h2><span class="num">06</span>Why the verification is two-sided</h2>
+  <p class="sec-note">Conformance alone is a one-sided test. An implementation can satisfy every AC <em>and</em> have grown a feature nobody asked for, a dependency nobody approved, or a table nobody specified. An autonomous loop is exactly the setting where that happens, because "add a little more" always looks like progress from inside the loop.</p>
+
+  <div class="cols">
+    <div class="panel">
+      <h3>Conformance — was the spec built?</h3>
+      <p style="font-size:14px;color:var(--muted);margin:0 0 10px">Extract the L3 ACs, adversarially check the delivered implementation, emit a traceability matrix of AC → evidence → verdict.</p>
+      <p style="font-size:13px;margin:0"><code>conformance ≥ threshold</code> · <code>unmet_must_haves == 0</code></p>
+    </div>
+    <div class="panel">
+      <h3>Negative pass — was <em>only</em> the spec built?</h3>
+      <p style="font-size:14px;color:var(--muted);margin:0 0 10px">Walk <code>non_goals</code> and the Phase 3 scope boundary against the actual diff: new surfaces, new dependencies, new config, new persisted state, behavior outside the declared boundary.</p>
+      <p style="font-size:13px;margin:0"><code>non_goal_violations == 0</code> — every out-of-boundary change is either reverted or explicitly ratified by the user, never silently kept.</p>
+    </div>
+  </div>
+
+  <div class="callout"><b>Independence here is model independence, not merely context independence.</b> A fresh context on the same model carries the same blind spot into the room that was convened to find it. So the verification runs on <code>judge</code>, and never on the engine that built — <em>wherever a second engine is reachable</em>. Where only one was, the pass still runs and the Delivery Report records <code>engine_independence: context-only</code> rather than implying a guarantee the run did not have.</div>
+
+  <h3>Integration evidence — a conditional third pass</h3>
+  <div class="tw">
+    <table>
+      <thead><tr><th>Condition</th><th>Action</th></tr></thead>
+      <tbody>
+        <tr><td>An integration surface exists and is reachable — a preview environment, a staging deploy, a policy or attestation check</td><td>Run the must-have ACs against it; record <code>integration_evidence: E5</code> and any AC the real surface failed</td></tr>
+        <tr><td>No such surface exists</td><td>Record <code>integration_evidence: unavailable</code> with what would have to exist</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="sec-note" style="margin-top:14px">Findings here do not block the exit gate on their own — an unreachable staging environment is not the run's fault. An AC that <strong>passes locally and fails on the real surface</strong> does block: that is a conformance failure the local oracle missed, and it re-enters Phase 6 like any other.</p>
+</section>
+
+<!-- ========== 7. ENGINES ========== -->
+<section id="engines">
+  <h2><span class="num">07</span>The engine roster</h2>
+  <p class="sec-note">A role is a property of the work, not a brand loyalty. The defaults are bindings, not identities: a probe that cannot reach the default rebinds the role and <strong>records</strong> it. Nothing downstream reads a CLI name; everything reads the role. The probe runs once, before the first spawn, and is cached for the run.</p>
+
+  <div class="tw">
+    <table>
+      <thead><tr><th>Role</th><th>The work it is chosen for</th><th>Default CLI</th><th>Fallback order</th></tr></thead>
+      <tbody>
+        <tr><td><span class="tag build">build</span></td><td>Code generation under a tool-heavy edit loop — write, run, read the failure, write again</td><td>Codex CLI</td><td><code>codex → claude → agy</code></td></tr>
+        <tr><td><span class="tag judge">judge</span></td><td>Adversarial reading against a stated contract — conformance, refutation, scope violation, risk</td><td>Claude Code</td><td><code>claude → codex → agy</code></td></tr>
+        <tr><td><span class="tag breadth">breadth</span></td><td>Wide sweeps and long context — whole-repo scans, blast radius, multimodal UX, research synthesis</td><td>agy (Gemini)</td><td><code>agy → claude → codex</code></td></tr>
+        <tr><td><span class="tag hub">hub</span></td><td>What cannot be delegated — phase sequencing, every gate verdict, checkpoint writes, the budget ledger, the Delivery Report</td><td>Whichever CLI it was invoked in</td><td>Never changes mid-run</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>When fewer than three are reachable</h3>
+  <div class="tw">
+    <table>
+      <thead><tr><th class="num-c">Reachable</th><th>Roster</th><th>What changes</th></tr></thead>
+      <tbody>
+        <tr><td class="num-c"><b>3</b></td><td>Full — each role on a distinct CLI</td><td>Nothing. This is the model the cost profile is written against</td></tr>
+        <tr><td class="num-c"><b>2</b></td><td>The missing role folds into the nearer CLI by fallback order</td><td><code>deliberation</code> runs two real voices plus one hub-simulated voice, recorded in <code>simulated_voices</code>. The envelope is recomputed at the new <code>build</code> engine's rates. <strong>Hard rule 1 still binds</strong> — <code>judge</code> and <code>build</code> stay distinct, which is what the two-engine case buys</td></tr>
+        <tr><td class="num-c"><b>1</b></td><td>Every role on the hub</td><td><code>deliberation</code> is fully simulated. The acceptance verification runs with context isolation only: <code>engine_independence: context-only</code>. <strong>Every gate and threshold is unchanged</strong> — the Phase 5 → 6 availability check reports the collapsed separation rather than blocking on it</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Hard rules</h3>
+  <ol class="rule-list">
+    <li data-n="01"><b>acceptance-verification.engine ≠ build.engine</b>, wherever a second engine is reachable. With one, the verification still runs and is recorded as <code>context-only</code>.</li>
+    <li data-n="02"><b>Phase 3 runs one voice per distinct engine.</b> With three reachable: <code>logic</code> = judge, <code>human-impact</code> = breadth, <code>precedent</code> = build.</li>
+    <li data-n="03"><b>No silent rebinding.</b> A role bound to something other than its default is recorded at bind time and named in the Delivery Report. The cost and convergence model is scored against a named roster.</li>
+    <li data-n="04"><b>The hub never delegates orchestration.</b> Gates, checkpoints, the budget ledger and the Delivery Report stay on the hub whatever the roster resolves to.</li>
+    <li data-n="05"><b>Degradation changes who runs a gate, never whether it passes.</b> No threshold moves because an engine was missing.</li>
+  </ol>
+
+  <div class="callout"><b>"Present but unusable" is not "absent".</b> A binary that answers but whose role spawn fails on auth, quota or config is a <em>transient</em> blocker. It is surfaced through the degradation protocol's <strong>abort-and-resume</strong> option — Phase 0–5 output is already checkpointed — not silently rebound. A blocker resolved in ten minutes is cheaper than a run scored against the wrong roster.</div>
+
+  <h3>Headless invocation — the silent-output traps</h3>
+  <div class="tw">
+    <table>
+      <thead><tr><th>CLI</th><th>Authoritative output</th><th>Trap</th></tr></thead>
+      <tbody>
+        <tr><td>Claude Code</td><td>stdout, parsed as JSON</td><td>Bare <code>-p</code> prints prose; without <code>--output-format json</code> there is nothing to parse deterministically</td></tr>
+        <tr><td>Codex CLI</td><td>The <code>-o &lt;abs artifact&gt;</code> file</td><td>Reading the transcript instead of the artifact</td></tr>
+        <tr><td>agy</td><td>An artifact file or a sentinel the prompt instructs the agent to write</td><td>Bare <code>agy -p</code> and <code>script -q /dev/null</code> <strong>fail silently</strong> — <code>exit 0</code> with empty stdout also describes a successful run, so the exit code cannot classify it. A real pty is required</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ========== 8. GATES ========== -->
+<section id="gates">
+  <h2><span class="num">08</span>Gate index</h2>
+  <p class="sec-note">A failed gate returns to the <strong>originating phase</strong>. It never advances with a note attached.</p>
+  <div class="tw">
+    <table>
+      <thead><tr><th>Gate</th><th>Fires at</th><th>Passing condition</th><th>On failure</th></tr></thead>
+      <tbody>
+        <tr><td><b>Boundary confirm</b></td><td>Phase 0 exit (autonomous only)</td><td>Per the Modes table</td><td>Abort; re-run Phase 0 with the objection as a hint</td></tr>
+        <tr><td><b>Verdict</b></td><td>Phase 3 exit</td><td>A non-split verdict with an AC seed and a scope boundary</td><td>1-1-1 split → human verdict, then re-enter Phase 3</td></tr>
+        <tr><td><b>Traceability</b></td><td>Phase 4 exit</td><td>Full ≥95% / Standard ≥85% / Lite ≥70%</td><td>Re-run the spec with a scope downgrade or refined inputs</td></tr>
+        <tr><td><b>Risk Gate</b></td><td>Phase 5 exit</td><td>All four axes: blast radius, RPN, friction, security</td><td>No-Go → the originating phase (4, or the failing 5-track)</td></tr>
+        <tr><td><b>Demand↔reaction closure</b></td><td>Phase 5, inside the Risk Gate</td><td>The walkthrough reaction does not diverge fatally from the predicted demand</td><td>Return to Phase 4 for re-spec — even when every axis nominally passes</td></tr>
+        <tr><td><b>Engine roster</b></td><td>Before the first spawn</td><td>All three CLIs probed and every role bound, with any rebinding recorded</td><td>Fold by fallback order and record the degradation; never proceed on an unrecorded roster</td></tr>
+        <tr><td><b>Engine availability</b></td><td>Phase 5 → 6 handoff</td><td><code>build</code> answers a spawn ∧ <code>judge</code> is a different CLI ∧ <code>max_depth ≥ 2</code> ∧ subagent tools permitted</td><td>Degradation protocol — a confirmed choice, never a silent fallback. One reachable CLI records <code>context-only</code> and proceeds</td></tr>
+        <tr><td><b>Loop precondition</b></td><td>Before Phase 6</td><td>The five-point gate</td><td>Do not enter the loop; report which point failed</td></tr>
+        <tr><td><b>Acceptance verification</b></td><td>Phase 6 → Ship</td><td><code>conformance ≥ threshold ∧ unmet_must_haves == 0 ∧ non_goal_violations == 0</code></td><td>Re-enter Phase 6 with the gap list, ≤ 2 times, then escalate</td></tr>
+        <tr><td><b>Ship</b></td><td>Ship exit</td><td><code>rollback_verified ∈ {true, declared-impossible(reason)}</code> ∧ the Delivery Report emitted</td><td>Do not open the PR; rehearse, or record the reason the rehearsal is impossible</td></tr>
+        <tr><td><b>Budget ceiling</b></td><td>Continuously</td><td>Cumulative spend &lt; ceiling</td><td>Hard stop with a resumable checkpoint; warn at 80%</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ========== 9. RUN RECORD ========== -->
+<section id="record">
+  <h2><span class="num">09</span>What a run leaves behind</h2>
+  <p class="sec-note">The Delivery Report is a <em>summary</em>. It quotes a traceability percentage, a Risk-Gate verdict and a conformance number, and carries none of what they were computed from — the personas that produced no usable demand, the FMEA rows below the RPN threshold, the architecture the ADR rejected, the reuse scan's near-misses. Each is produced by an expensive phase, read once by the next phase, and then gone. So every run writes a <strong>run record</strong> to <code>.agents/feature-lifecycle/runs/&lt;run-id&gt;/</code>, opened before the first spawn and committed with the change it describes. In autonomous mode those two demands collide — Phase 0's scan spawns before a goal exists to name the directory after — so the id is two-stage: a provisional <code>YYYY-MM-DD-bootstrap-&lt;n&gt;</code> at launch, renamed once to the goal slug at the boundary confirm, before Phase 1 opens.</p>
+
+  <div class="cols">
+    <div>
+      <h3 style="margin-top:0">The directory</h3>
+      <pre>RUN.md                index · roster · budget
+                      phase status · resume pointer
+00-bootstrap.md       P0   (autonomous runs only)
+01-discovery.md       P1
+02-ideate.md          P2
+03-verdict.md         P3
+04-spec.md            P4
+05-design.md          P5   tracks + the Risk Gate
+06-loop.md            P6
+07-verification.md    VERIFY
+08-ship.md            SHIP
+90-delivery-report.md the report, verbatim
+artifacts/
+  acceptance-criteria.md   scope-boundary.md
+  measurement-contract.md  loop-contract.md
+  acceptance-matrix.md     ADR-NNN-&lt;slug&gt;.md</pre>
+      <p class="sec-note" style="margin-top:14px">The file number is the phase number. A phase that did not run has no document; a conditional row that did not run is a line in its phase's document — "the UX track did not run, there is no UI surface" is a finding, a gap in the numbering is a puzzle.</p>
+    </div>
+    <div>
+      <h3 style="margin-top:0">Four sections, every phase</h3>
+      <div class="tw">
+        <table>
+          <thead><tr><th>Section</th><th>Carries</th></tr></thead>
+          <tbody>
+            <tr><td><code>## Outcome</code></td><td>The typed artifact the phase emitted, or a link to it under <code>artifacts/</code>. What the next phase consumes and the report summarises</td></tr>
+            <tr><td><code>## Findings</code></td><td><strong>What the phase learned that its artifact does not carry.</strong> The artifact is the decision; the findings are what it was decided against and then dropped</td></tr>
+            <tr><td><code>## Rejected</code></td><td>Every option considered and dropped, each with the reason. No alternatives → <code>none — &lt;why the shape was forced&gt;</code></td></tr>
+            <tr><td><code>## Gate</code></td><td>The exit criterion <em>verbatim</em>, the measured value of each term, the verdict — and on a failure, where it returned to and what must change</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="sec-note" style="margin-top:14px">Quoting the criterion rather than paraphrasing is what makes the record auditable: a gate written down as "traceability OK" cannot be checked against a threshold that was 85%.</p>
+    </div>
+  </div>
+
+  <h3>Sealed at the gate — and a re-entry appends</h3>
+  <figure>
+    <div class="scroll">
+    <svg viewBox="0 0 1120 350" role="img" aria-label="A phase document's life. It is created open when the phase opens, gains its outcome, findings and rejected sections, and is sealed when the gate fires — including when the gate fails. A re-entry after a failed gate appends a re-entry block and a second gate record, so the failure stays in the history. Rewriting instead would leave a document showing only a passing gate.">
+      <defs>
+        <marker id="ar3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M0,1 L9,5 L0,9 z" fill="currentColor"/>
+        </marker>
+      </defs>
+
+      <text x="30" y="26" font-family="'JetBrains Mono',monospace" font-size="10" fill="currentColor" opacity=".55" letter-spacing=".08em">RUN EVENTS</text>
+      <text x="300" y="26" font-family="'JetBrains Mono',monospace" font-size="10" fill="#14615C" letter-spacing=".08em">APPEND-ONLY — what the record holds</text>
+      <text x="800" y="26" font-family="'JetBrains Mono',monospace" font-size="10" fill="#9E3B26" letter-spacing=".08em">REWRITE — what it would lose</text>
+
+      <g font-family="'JetBrains Mono',monospace" font-size="10.5" fill="currentColor" opacity=".7">
+        <text x="30" y="66">phase opens</text>
+        <text x="30" y="128">work completes</text>
+        <text x="30" y="168">gate fires — FAIL</text>
+        <text x="30" y="228">returns upstream,</text>
+        <text x="30" y="243">cause fixed, re-enters</text>
+        <text x="30" y="298">gate fires — PASS</text>
+      </g>
+      <line x1="255" y1="40" x2="255" y2="330" stroke="currentColor" stroke-width="1" opacity=".18"/>
+      <line x1="760" y1="40" x2="760" y2="330" stroke="currentColor" stroke-width="1" opacity=".18"/>
+      <g stroke="currentColor" stroke-width="1.2" fill="none" marker-end="url(#ar3)" opacity=".45">
+        <line x1="200" y1="62" x2="286" y2="62"/>
+        <line x1="205" y1="124" x2="286" y2="124"/>
+        <line x1="215" y1="164" x2="286" y2="164"/>
+        <line x1="215" y1="236" x2="286" y2="236"/>
+        <line x1="205" y1="294" x2="286" y2="294"/>
+      </g>
+
+      <!-- append-only document -->
+      <g>
+        <rect x="292" y="44" width="420" height="36" rx="1" fill="#14615C" fill-opacity=".08" stroke="#14615C" stroke-width="1.2"/>
+        <text x="306" y="60" font-family="'JetBrains Mono',monospace" font-size="10.5" fill="currentColor">--- run · phase: P5_DESIGN · status: open ---</text>
+        <text x="306" y="74" font-family="'JetBrains Mono',monospace" font-size="9.5" fill="currentColor" opacity=".6">frontmatter written the moment the phase opens</text>
+
+        <rect x="292" y="88" width="420" height="52" rx="1" fill="none" stroke="currentColor" stroke-width="1.2"/>
+        <text x="306" y="106" font-family="'JetBrains Mono',monospace" font-size="10.5" fill="currentColor">## Outcome   ## Findings   ## Rejected</text>
+        <text x="306" y="126" font-family="'JetBrains Mono',monospace" font-size="9.5" fill="currentColor" opacity=".6">ADR · FMEA rows below threshold · rejected architectures</text>
+
+        <rect x="292" y="148" width="420" height="52" rx="1" fill="#9E3B26" fill-opacity=".1" stroke="#9E3B26" stroke-width="1.3"/>
+        <text x="306" y="166" font-family="'JetBrains Mono',monospace" font-size="10.5" fill="#9E3B26">## Gate — fail   security.unmitigated_high == 2</text>
+        <text x="306" y="186" font-family="'JetBrains Mono',monospace" font-size="9.5" fill="#9E3B26" opacity=".85">sealed · returned to P4 · what must change</text>
+
+        <rect x="292" y="208" width="420" height="52" rx="1" fill="none" stroke="currentColor" stroke-width="1.2" stroke-dasharray="4 3"/>
+        <text x="306" y="226" font-family="'JetBrains Mono',monospace" font-size="10.5" fill="currentColor">## Re-entry 1 — appended, never overwritten</text>
+        <text x="306" y="246" font-family="'JetBrains Mono',monospace" font-size="9.5" fill="currentColor" opacity=".6">returned from · what changed · re-measured terms</text>
+
+        <rect x="292" y="268" width="420" height="52" rx="1" fill="#14615C" fill-opacity=".1" stroke="#14615C" stroke-width="1.3"/>
+        <text x="306" y="286" font-family="'JetBrains Mono',monospace" font-size="10.5" fill="#14615C">## Gate — pass   all four axes, measured</text>
+        <text x="306" y="306" font-family="'JetBrains Mono',monospace" font-size="9.5" fill="#14615C" opacity=".85">sealed · status: sealed</text>
+      </g>
+
+      <!-- rewrite counterfactual -->
+      <g opacity=".55">
+        <rect x="796" y="44" width="296" height="36" rx="1" fill="none" stroke="currentColor" stroke-width="1.2" stroke-dasharray="3 3"/>
+        <text x="810" y="66" font-family="'JetBrains Mono',monospace" font-size="10.5" fill="currentColor">--- status: sealed ---</text>
+        <rect x="796" y="88" width="296" height="52" rx="1" fill="none" stroke="currentColor" stroke-width="1.2" stroke-dasharray="3 3"/>
+        <text x="810" y="118" font-family="'JetBrains Mono',monospace" font-size="10.5" fill="currentColor">## Outcome  ## Findings  ## Rejected</text>
+        <rect x="796" y="148" width="296" height="52" rx="1" fill="#14615C" fill-opacity=".08" stroke="#14615C" stroke-width="1.2" stroke-dasharray="3 3"/>
+        <text x="810" y="178" font-family="'JetBrains Mono',monospace" font-size="10.5" fill="#14615C">## Gate — pass</text>
+      </g>
+      <g>
+        <line x1="796" y1="222" x2="1092" y2="222" stroke="#9E3B26" stroke-width="1" opacity=".4"/>
+        <text x="796" y="244" font-family="'JetBrains Mono',monospace" font-size="10" fill="#9E3B26">the failed gate is gone</text>
+        <text x="796" y="260" font-family="'JetBrains Mono',monospace" font-size="10" fill="#9E3B26">the cause is gone</text>
+        <text x="796" y="276" font-family="'JetBrains Mono',monospace" font-size="10" fill="#9E3B26">the fix is gone</text>
+        <text x="796" y="300" font-family="'JetBrains Mono',monospace" font-size="9.5" fill="currentColor" opacity=".6">reads as a run that got it</text>
+        <text x="796" y="314" font-family="'JetBrains Mono',monospace" font-size="9.5" fill="currentColor" opacity=".6">right the first time</text>
+      </g>
+    </svg>
+    </div>
+    <figcaption>A document opens with the phase and is sealed <strong>in the same step that records the gate verdict</strong> — so <code>gate: fail</code> is a normal value in the record, not an error state. Writing on success only would lose exactly the phase whose record matters most. Writes are atomic (<code>.tmp</code> then rename): a run killed mid-write must not leave a truncated document that <code>resume</code> reads as a checkpoint, because a missing document is detected and a half-written one is not. The hub is the only writer — spawned agents return through the output envelope and never write into the run directory.</figcaption>
+  </figure>
+
+  <h3>Standalone artifacts — the test is who reads it</h3>
+  <p class="sec-note">A thing gets its own file under <code>artifacts/</code> when something <em>outside the phase that wrote it</em> reads it on its own. Not size, not importance. Adding a seventh kind requires naming its outside reader — without that test the directory drifts into a second copy of the phase documents, and then two places disagree about the same fact.</p>
+  <div class="tw">
+    <table>
+      <thead><tr><th>Artifact</th><th>Written by</th><th>Read on its own by</th></tr></thead>
+      <tbody>
+        <tr><td><code>acceptance-criteria.md</code></td><td>P4</td><td>The loop contract, the acceptance verification, the Delivery Report</td></tr>
+        <tr><td><code>scope-boundary.md</code></td><td>P3 seeds, P4 finalises</td><td>Every spawn's scope bound, and the verification's negative pass</td></tr>
+        <tr><td><code>measurement-contract.md</code></td><td>P4</td><td>Ship, and whoever reads the metric after the run has ended</td></tr>
+        <tr><td><code>loop-contract.md</code></td><td>The P5 → P6 handoff</td><td>The loop driver — the only thing that crosses the engine boundary, and the answer to "what was the loop actually told to do?"</td></tr>
+        <tr><td><code>acceptance-matrix.md</code></td><td>VERIFY</td><td>The Ship gate, and anyone auditing the claim later</td></tr>
+        <tr><td><code>ADR-NNN-&lt;slug&gt;.md</code></td><td>P5 Tech</td><td>The codebase, later features, anyone asking why this shape</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="sec-note" style="margin-top:14px">The four Risk-Gate axes deliberately stay inside <code>05-design.md</code>. They are one gate with one conjunctive verdict; splitting them into four files buries the <code>∧</code> that <em>is</em> the gate.</p>
+
+  <h3>Four surfaces, four jobs</h3>
+  <div class="tw">
+    <table>
+      <thead><tr><th>Surface</th><th>Holds</th><th>Grows with</th><th>Lifetime</th></tr></thead>
+      <tbody>
+        <tr><td><b>Run record</b><br><code>.agents/feature-lifecycle/runs/&lt;id&gt;/</code></td><td>What <em>this run</em> decided, and what it decided that against</td><td>Every run</td><td>The run, plus however long its analysis is useful</td></tr>
+        <tr><td><b>Journal</b><br><code>.agents/feature-lifecycle.md</code></td><td>Learnings about <em>the chain itself</em> — which gate caught what, where an estimate diverged from actual cost</td><td>Only runs that taught something reusable</td><td>Permanent</td></tr>
+        <tr><td><b>Activity log</b><br><code>.agents/PROJECT.md</code></td><td>One line per run</td><td>Every run</td><td>Permanent</td></tr>
+        <tr><td><b>Delivery Report</b></td><td>The run's summary, emitted to the caller — and written to <code>90-delivery-report.md</code></td><td>Every run</td><td>The conversation, plus the run record</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="sec-note" style="margin-top:14px">The journal stays a journal. Before the run record existed, a run with something worth preserving had nowhere to put it but the journal — which is how a learnings file becomes a diary nobody reads.</p>
+
+  <div class="callout"><b>What never goes in.</b> Secrets, tokens or customer data — the record is committed, so treat every line as published, because it is. Raw spawn transcripts — the store is analysis, and a producer's own reasoning trace is <code>E0</code> on the evidence ladder, not evidence for anything the record claims. The diff — git holds that; the record names the files and the reason. And a number with no source: a conformance percentage or an RPN is written with what produced it, because the run record is not the place to add confidence the run did not earn.</div>
+</section>
+
+<!-- ========== 10. COST ========== -->
+<section id="cost">
+  <h2><span class="num">10</span>Cost, budget and resume</h2>
+  <p class="sec-note">The agent counts are engine-agnostic; the <strong>cost is not</strong>. A run spread across three CLIs spends against three pricing models, so the envelope carries a per-engine sub-ledger and a single mixed total is never quoted as the figure.</p>
+  <div class="cols">
+    <div>
+      <div class="tw">
+        <table>
+          <thead><tr><th>Profile</th><th class="num-c">Agents</th><th>Cost</th></tr></thead>
+          <tbody>
+            <tr><td>Lite — no UI, spec scope Lite</td><td class="num-c">11–13</td><td>Low</td></tr>
+            <tr><td>Standard — UI, spec scope Standard</td><td class="num-c">17–22</td><td>Medium</td></tr>
+            <tr><td>Full — greenfield, spec scope Full</td><td class="num-c">23–30</td><td>High</td></tr>
+            <tr><td>+ autonomous bootstrap (Phase 0)</td><td class="num-c">+4–8</td><td>+10–20%</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="sec-note" style="margin-top:14px">Counting loop iterations, that is <strong>27–61 spawns</strong> at the Full autonomous profile. For repeated similar requests, propose a project-local skill to amortise the chain design cost instead of re-running the chain.</p>
+    </div>
+    <div>
+      <h3 style="margin-top:0">The budget envelope</h3>
+      <ul class="rule-list">
+        <li data-n="→"><b>Declared at launch.</b> Default ceiling = the cost-profile estimate × 1.5; the user may override.</li>
+        <li data-n="→"><b>A warning at 80%.</b> <code>GUIDED</code>/<code>INTERACTIVE</code> pause for a continue/abort decision; <code>AUTORUN_FULL</code> logs and proceeds to the ceiling.</li>
+        <li data-n="→"><b>The ceiling is a hard stop</b>, not advisory. It is what protects against a runaway Phase 6 loop or a re-entry storm from the acceptance gate.</li>
+      </ul>
+      <h3>Checkpoint and resume</h3>
+      <p style="font-size:14px;color:var(--muted);margin:0">The Phase 0 goal artifact, the Phase 3 verdict + AC seed, the Phase 4 spec + traceability, the Phase 5 design + Risk-Gate result, and the Phase 6 build state are each persisted as a resumable checkpoint. A run that aborts mid-flight <strong>resumes from the last good phase</strong> instead of restarting from Phase 1 — so a runner problem never costs five completed phases. <code>resume</code> reads <code>RUN.md</code> and re-binds the artifacts it names (§&nbsp;9); it never infers the resume point by scanning the directory, because a listing cannot tell a sealed phase from one killed a second before its gate.</p>
+    </div>
+  </div>
+  <div class="callout"><b>The Delivery Report is emitted on every exit, aborts included.</b> Budget ceiling, Risk-Gate No-Go, an acceptance failure past the re-entry cap, an unavailable engine with no answer — each still emits, with best-so-far per phase, the residual gap, and the resumable checkpoint. Never a silent stop.</div>
+</section>
+
+<!-- ========== 10. TRAPS ========== -->
+<section id="traps">
+  <h2><span class="num">11</span>Gotchas</h2>
+  <p class="sec-note">Each of these is a run that passes its gates and is wrong anyway. They are the reason the chain is expensive.</p>
+  <ol class="rule-list">
+    <li data-n="01"><b>A loop that converges is not a loop that is correct.</b> Convergence means the iteration stopped producing changes; it can stop on an implementation that passes its own tests and misses the spec entirely.</li>
+    <li data-n="02"><b>Conformance alone is a one-sided test.</b> An implementation can satisfy every AC <em>and</em> have grown a surface, a dependency or a table nobody specified. The negative pass is what makes the scope boundary load-bearing rather than decorative.</li>
+    <li data-n="03"><b>An upstream packet collapses derivation, not verification.</b> Arriving from a spec packet means Phases 1–4 become validation — not that the Risk Gate or the acceptance verification get lighter.</li>
+    <li data-n="04"><b>Three seats on one model is not a tri-engine verdict.</b> Phase 3's cost is justified by three engines actually disagreeing; a single model arguing with itself converges on its own priors and returns a confident split that means nothing.</li>
+    <li data-n="05"><b>Conformance is not validity.</b> The verification proves the spec was built; it is silent on whether the demand the spec came from existed. That is why the measurement contract leaves the run open rather than closed.</li>
+    <li data-n="06"><b>A silent runner swap invalidates the run's cost figures.</b> Iteration ceilings and budget envelopes are scored against one named engine. A fallback nobody was told about produces numbers that read against the wrong model.</li>
+    <li data-n="07"><b>A clone's declared parity ceiling is a constraint, not a defect.</b> A loop given a parity harness will happily "fix" a ceiling-bound behavior and move the product off its baseline.</li>
+    <li data-n="08"><b>Phase 1 on an existing repo means a reuse scan first.</b> A second implementation of something the repo already ships is discovered in Phase 1 for the cost of a scan, or in Phase 6 for the cost of the whole loop.</li>
+    <li data-n="09"><b>The next Phase 0 goes blind.</b> A feature shipped without the events behind its own measurement contract is invisible to the following autonomous scan — and the blind spot compounds fastest on exactly the features the loop was most confident about.</li>
+  </ol>
+</section>
+
+<footer>
+  Generated from <code>skills/feature-lifecycle/SKILL.md</code> and <code>reference/</code> — <code>phase-contracts.md</code> · <code>loop-engine.md</code> · <code>engine-roster.md</code> · <code>delivery-report.md</code> · <code>contracts.md</code> · <code>input-contracts.md</code> · <code>delegation-map.md</code>.<br>
+  This page is explanatory. The phase contracts, gates, rosters, budgets and failure behavior in those files remain canonical.
+</footer>
+
+</div>
+
+<script>
+(function () {
+  var PROFILES = {
+    lite:     { count: "11–13", note: "no UI · UX track idle · spec scope Lite" },
+    standard: { count: "17–22", note: "all phases active" },
+    full:     { count: "23–30", note: "+ scope-cutting / formal-spec / design-file-extraction / i18n" }
+  };
+  var BOOT = { lite: "15–21", standard: "21–30", full: "27–38" };
+
+  var seg = document.getElementById("segProfile");
+  var buttons = seg.querySelectorAll("button");
+  var boot = document.getElementById("bootChk");
+  var countEl = document.getElementById("agentCount");
+  var noteEl = document.getElementById("profNote");
+  var p0Card = document.querySelector('[data-phase="p0"]');
+  var rows = document.querySelectorAll(".rows li");
+
+  var current = "standard";
+
+  function apply() {
+    for (var i = 0; i < buttons.length; i++) {
+      buttons[i].setAttribute("aria-pressed", String(buttons[i].dataset.p === current));
+    }
+    for (var j = 0; j < rows.length; j++) {
+      var only = rows[j].getAttribute("data-only");
+      var active = !only || only.split(" ").indexOf(current) !== -1;
+      rows[j].classList.toggle("dim", !active);
+    }
+    p0Card.classList.toggle("off", !boot.checked);
+    countEl.textContent = boot.checked ? BOOT[current] : PROFILES[current].count;
+    noteEl.textContent = PROFILES[current].note + (boot.checked ? " · Phase 0 included" : "");
+    try { localStorage.setItem("fl-profile", current + "|" + (boot.checked ? "1" : "0")); } catch (e) {}
+  }
+
+  seg.addEventListener("click", function (e) {
+    var b = e.target.closest("button");
+    if (!b) return;
+    current = b.dataset.p;
+    apply();
+  });
+  boot.addEventListener("change", apply);
+
+  try {
+    var saved = localStorage.getItem("fl-profile");
+    if (saved) {
+      var parts = saved.split("|");
+      if (PROFILES[parts[0]]) current = parts[0];
+      boot.checked = parts[1] === "1";
+    }
+  } catch (e) {}
+
+  apply();
+})();
+</script>
+</body>
+</html>
