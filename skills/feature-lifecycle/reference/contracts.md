@@ -14,7 +14,8 @@
 - 6. Work Gate
 - 7. Handoff Envelopes
 - 8. Run Record, Journal and Activity Log
-- 9. Git Conventions
+- 9. Document Contract
+- 10. Git Conventions
 
 ---
 
@@ -208,7 +209,44 @@ Three surfaces under `.agents/`, three jobs. The full split — including the De
 
 ---
 
-## 9. Git Conventions
+## 9. Document Contract
+
+Binds every document the chain writes: phase documents and artifacts (`reference/run-record.md`), spawn prompts (§5), handoff envelopes (§7), and the Delivery Report. It binds hardest at a boundary a reader cannot ask across — a spawn prompt, a loop contract, an AC — where an ambiguity is not resolved later, it is resolved wrongly and silently.
+
+**Two tests; a document passes only both.**
+
+| Test | Question | What failing it costs |
+|------|----------|-----------------------|
+| **Unambiguous** | Can the named reader act on this without asking a question? | A second reading exists, and nothing stops the wrong one being picked |
+| **Minimal** | Delete the line — does anything become ambiguous, unrecoverable, or unverifiable? | It was restatement, and it buried the lines that carried the run |
+
+**Disambiguate first, compress second.** Compressing an ambiguous sentence yields a shorter ambiguous sentence, and its brevity then reads as precision.
+
+### Zero ambiguity
+
+- **Name the actor and the object.** No bare passive where more than one agent could be the subject; no `this` / `it` with two available antecedents.
+- **Every quantity is a number, a unit, and its source.** `significant`, `soon`, `large`, `most` are unwritten measurements — measure, or record `unmeasured (<why>)`.
+- **Every conditional carries its else branch.** A rule whose negative case is unstated is a rule the reader completes by guessing.
+- **Every claim carries its status** — `verified` with its evidence rung (§3), `unverified`, or `assumed`. An unlabeled claim is read as verified.
+- **One meaning per term, fixed at first use.** A synonym introduced later reads as a second thing.
+- **An uncheckable statement is made checkable or marked as an assumption** — the gate Phase 4 applies to an AC, applied to prose.
+
+### Zero redundancy
+
+- **One fact, one home**; everything else links to it. Two copies drift, and the reader cannot tell which is stale.
+- **Cut process narration.** What was learned stays; the order it was learned in goes, unless that order produced the finding.
+- **No preamble, no closing summary, no restating the request.** The artifact, the measured gate terms, and the number with its source are the document.
+- **No `N/A` padding.** A row that did not run is absent, or is one line naming why (`reference/run-record.md`).
+
+### The floor compression never crosses
+
+Kept even where a reader "would infer" them, because inferring them wrong is the failure the chain exists to prevent: the **scope bound and non-goals** · a **number's source** · a **claim's status label** · the **reason under a rejected option**.
+
+**The one licensed duplication:** §5 restates the spec's `non_goals` verbatim in every spawn prompt. A spawn cannot follow a link out of its own context, so there the copy *is* the single home. Duplication is licensed exactly where the reader cannot reach the original — nowhere else.
+
+---
+
+## 10. Git Conventions
 
 Apply to anything the chain commits through the Ship phase.
 

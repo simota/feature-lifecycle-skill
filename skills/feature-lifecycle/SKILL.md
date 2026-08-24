@@ -74,6 +74,7 @@ Route elsewhere when the task is primarily:
 - **Bounded everywhere.** Implementation loop `≤ 6` cycles; acceptance-gap re-entry `≤ 2`; run-level budget ceiling is a hard stop that checkpoints, not a warning.
 - **Consume upstream packets; never re-derive them.** A `spec` or `clone` packet collapses re-derivation, never verification → `reference/input-contracts.md`.
 - **One human checkpoint in autonomous mode** — the Phase 0 boundary confirm. Downstream, only an internal gate, a circuit breaker, or the budget ceiling stops the run.
+- **Every document is written to the Document Contract** (`reference/contracts.md` §9): ambiguity driven to zero first, then redundancy cut to nothing — one fact one home, no narration, no padding — with the scope bound, a number's source, a claim's status label and a rejected option's reason never compressed away.
 - Output language follows the CLI global config; identifiers, protocol markers, and schema keys stay English.
 
 ## Boundaries
@@ -287,7 +288,7 @@ Each row is a boundary, not a dependency: where the neighbouring capability is n
 | `reference/run-record.md` | You are launching, sealing a phase at its gate, resuming, or deciding whether something belongs in the record, the journal, or the report |
 | `reference/input-contracts.md` | An upstream packet arrived, or you must decide what a bare invocation re-derives |
 | `reference/delivery-report.md` | You are emitting output, sizing the budget envelope, resuming, or classifying a failure |
-| `reference/contracts.md` | Any operating rule the chain depends on — precedence, the loop precondition gate, the evidence ladder, driver availability, the spawn contract, the Work Gate, handoff envelopes, the run record and journal, and Git conventions |
+| `reference/contracts.md` | Any operating rule the chain depends on — precedence, the loop precondition gate, the evidence ladder, driver availability, the spawn contract, the Work Gate, handoff envelopes, the run record and journal, how every document is written, and Git conventions |
 
 ## Operational
 
@@ -297,7 +298,7 @@ Each row is a boundary, not a dependency: where the neighbouring capability is n
 
 - Activity log: append `| YYYY-MM-DD | Feature Lifecycle | (action) | (files) | (outcome) |` to `.agents/PROJECT.md`.
 
-**Operating contracts** — in effect on every run, precedence in `reference/contracts.md` §1: the loop precondition gate (§2), the evidence ladder (§3), the driver availability gate (§4), the spawn contract (§5), the Work Gate (§6), handoff envelopes (§7), the run record, journal and activity log (§8), and Git conventions (§9). When the chain runs inside a repository that ships its own `_common/` protocol set, those originals outrank this file.
+**Operating contracts** — in effect on every run, precedence in `reference/contracts.md` §1: the loop precondition gate (§2), the evidence ladder (§3), the driver availability gate (§4), the spawn contract (§5), the Work Gate (§6), handoff envelopes (§7), the run record, journal and activity log (§8), the Document Contract (§9), and Git conventions (§10). When the chain runs inside a repository that ships its own `_common/` protocol set, those originals outrank this file.
 
 Emit `WORK_GATE` (`reference/contracts.md` §6) alongside the Delivery Report.
 

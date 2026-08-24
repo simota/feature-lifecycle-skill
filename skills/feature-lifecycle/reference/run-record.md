@@ -171,6 +171,8 @@ The four Risk-Gate axes deliberately stay inside `05-design.md`. They are one ga
 
 ## Write Discipline
 
+How the prose inside these documents is written — zero ambiguity, zero redundancy, and the floor compression never crosses — is `reference/contracts.md` §9. This section governs *when* a document is created, sealed and rewritten.
+
 **Create before spawning.** The directory and `RUN.md` exist before the first spawn, carrying the resolved engine roster, the budget ceiling, and the run's mode and scope. In autonomous mode that directory carries the provisional id and is renamed once at the boundary confirm (§ Where it lives).
 
 **Open at entry, seal at the gate.** A phase document is created with `status: open` when the phase opens. It is sealed **in the same step that records the gate verdict** — a gate verdict recorded against an unsealed document is not recorded.

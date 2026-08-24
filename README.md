@@ -48,7 +48,7 @@ relative to `skills/feature-lifecycle/`.
 | `reference/input-contracts.md` | Upstream handoff packets and what a bare invocation must derive itself |
 | `reference/delivery-report.md` | Output envelope, Delivery Report, cost profile, budget envelope, checkpoint-resume, failure escalation |
 | `reference/run-record.md` | Where a run's analysis is written — the run directory, the sealed document per phase, the artifacts that outlive their phase, the write discipline, and what `resume` reads |
-| `reference/contracts.md` | The operating rules the chain carries with it — precedence, loop preconditions, evidence ladder, driver availability, spawn contract, Work Gate, handoffs, run record and journal, Git |
+| `reference/contracts.md` | The operating rules the chain carries with it — precedence, loop preconditions, evidence ladder, driver availability, spawn contract, Work Gate, handoffs, run record and journal, the Document Contract every document is written to, Git |
 
 ## What a run leaves behind
 

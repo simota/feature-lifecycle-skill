@@ -66,7 +66,7 @@ Names are those of the `agent-skills` ecosystem this skill was extracted from. T
 | 6 | `e2e-persona-tests` | `voyager` | Author E2E flows from the Phase 1 personas |
 | 6 | `instrumentation` | — (no candidate claimed) | Emit the events, counters, or spans the measurement contract names |
 | Verify | `acceptance-verification` | `attest` | Run both passes directly — always on the `judge` engine |
-| Ship | `commit-and-pr` | `guardian` | Apply `reference/contracts.md` §9 and open the PR |
+| Ship | `commit-and-pr` | `guardian` | Apply `reference/contracts.md` §10 and open the PR |
 | Ship | `release-plan` | `launch` | Author the release notes, CHANGELOG entry, and rollback plan |
 | Ship | `rollback-rehearsal` | — (no candidate claimed) | Execute the rollback plan; exercise a migration's down-path against production-shaped data |
 
