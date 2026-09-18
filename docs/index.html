@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Feature Lifecycle · Chain Reference</title>
-<meta name="description" content="The nine phases, ten gates and three engine roles of the Feature Lifecycle Agent Skill — including every path that sends work back upstream.">
+<meta name="description" content="The one feature, its phase boundaries and three engine roles of the Feature Lifecycle Agent Skill — including every path that sends work back upstream.">
 <meta name="color-scheme" content="light dark">
 <meta property="og:title" content="Feature Lifecycle · Chain Reference">
 <meta property="og:description" content="One high-stakes feature, discovery to ship: nine phases, ten gates, three engine roles.">
@@ -257,14 +257,14 @@ a:focus-visible{outline:2px solid var(--gate);outline-offset:2px}
 <header class="mast">
   <p class="eyebrow">Agent Skill / one feature, discovery → ship</p>
   <h1>Feature Lifecycle<span class="sub">From an unstated need to a released change. One invocation, one feature.</span></h1>
-  <p class="lede">Nine phases, ten gates, three engine roles. Every phase emits a typed artifact and every boundary has a named gate. A failed gate returns to the phase that caused it — never forward with a note attached. The chain is expensive on purpose: the cheapest place to find out you built the wrong thing is before you build it.</p>
+  <p class="lede">Use the chain only when costly remaining uncertainty justifies pre-build discovery. Explicit authority starts the run; required obligations and independent evidence, not phase counts, determine readiness. A failed gate returns to the phase that caused it — never forward with a note attached. The chain is expensive on purpose: the cheapest place to find out you built the wrong thing is before you build it.</p>
   <div class="facts">
     <div class="fact"><b>9</b><span>phases</span></div>
     <div class="fact"><b>10</b><span>gates</span></div>
     <div class="fact"><b>3</b><span>engine roles</span></div>
     <div class="fact"><b>≤ 6</b><span>loop cycles</span></div>
     <div class="fact"><b>11–30</b><span>agents / run</span></div>
-    <div class="fact"><b>1</b><span>human checkpoint</span></div>
+    <div class="fact"><b>Explicit</b><span>launch authority</span></div>
   </div>
 </header>
 
@@ -289,7 +289,7 @@ a:focus-visible{outline:2px solid var(--gate);outline-offset:2px}
 
   <figure>
     <div class="scroll">
-    <svg viewBox="0 0 1200 420" role="img" aria-label="Feature Lifecycle flow. Phase 0 Bootstrap leads to a boundary confirm, then Phase 1 Discovery, Phase 2 Ideate and Phase 3 Verdict, then Phase 4 Spec, Phase 5 Design, the Risk Gate, the Phase 6 loop, acceptance verification and Ship. A split verdict escalates to a human verdict and re-enters Phase 3; a No-Go risk gate returns to Phase 4; an acceptance gap re-enters Phase 6.">
+    <svg viewBox="0 0 1200 420" role="img" aria-label="Feature Lifecycle flow. Phase 0 Bootstrap leads to a boundary confirm, then Phase 1 Discovery, Phase 2 Ideate and Phase 3 Verdict, then Phase 4 Spec, Phase 5 Design, the Risk Gate, the Phase 6 loop, acceptance verification and Ship. A split verdict returns to Phase 3. Failures return to the first wrong decision: demand to P1, spec to P4, design to P5, code to P6. Missing required evidence blocks readiness.">
       <defs>
         <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
           <path d="M0,1 L9,5 L0,9 z" fill="currentColor"/>
@@ -311,16 +311,16 @@ a:focus-visible{outline:2px solid var(--gate);outline-offset:2px}
       </g>
 
       <g>
-        <rect x="745" y="12" width="170" height="34" rx="1" fill="none" stroke="currentColor" stroke-width="1.1" stroke-dasharray="4 3" opacity=".65"/>
-        <text x="830" y="34" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="11" fill="currentColor" opacity=".8">human verdict</text>
+        <rect x="975" y="12" width="170" height="34" rx="1" fill="none" stroke="currentColor" stroke-width="1.1" stroke-dasharray="4 3" opacity=".65"/>
+        <text x="1060" y="34" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="11" fill="currentColor" opacity=".8">human verdict</text>
       </g>
       <g stroke="currentColor" stroke-width="1.2" fill="none" marker-end="url(#ar)" opacity=".7">
-        <polyline points="785,93 785,46"/>
-        <polyline points="875,46 875,93"/>
+        <polyline points="1015,93 1015,46"/>
+        <polyline points="1105,46 1105,93"/>
       </g>
       <g font-family="'JetBrains Mono',monospace" font-size="9" fill="currentColor" opacity=".6">
-        <text x="700" y="72" text-anchor="end">split →</text>
-        <text x="890" y="72">← re-enter</text>
+        <text x="930" y="72" text-anchor="end">split →</text>
+        <text x="1120" y="72">← re-enter</text>
       </g>
 
       <!-- ROW 1 -->
@@ -331,7 +331,7 @@ a:focus-visible{outline:2px solid var(--gate);outline-offset:2px}
 
         <rect x="285" y="93" width="170" height="56" rx="1" fill="#9E3B26" fill-opacity=".1" stroke="#9E3B26" stroke-width="1.4"/>
         <text x="300" y="116" font-family="Archivo,sans-serif" font-weight="700" font-size="13" fill="#9E3B26">GATE · CONFIRM</text>
-        <text x="300" y="134" font-family="'JetBrains Mono',monospace" font-size="10" fill="#9E3B26" opacity=".85">the one human check</text>
+        <text x="300" y="134" font-family="'JetBrains Mono',monospace" font-size="10" fill="#9E3B26" opacity=".85">explicit launch grant</text>
 
         <rect x="515" y="93" width="170" height="56" rx="1" fill="none" stroke="currentColor" stroke-width="1.4"/>
         <text x="530" y="116" font-family="Archivo,sans-serif" font-weight="700" font-size="13" fill="currentColor">P1 · DISCOVER</text>
@@ -405,23 +405,23 @@ a:focus-visible{outline:2px solid var(--gate);outline-offset:2px}
       <g stroke="#9E3B26" stroke-width="1.5" fill="none" marker-end="url(#arG)">
         <polyline points="600,334 600,372 140,372 140,338"/>
       </g>
-      <text x="370" y="386" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="9.5" fill="#9E3B26">No-Go / demand↔reaction divergence → the originating phase</text>
+      <text x="370" y="386" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="9.5" fill="#9E3B26">spec defect → P4; demand → P1; design → P5</text>
 
       <g stroke="#9E3B26" stroke-width="1.5" fill="none" marker-end="url(#arG)">
         <polyline points="1060,278 1060,250 830,250 830,274"/>
       </g>
-      <text x="945" y="244" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="9.5" fill="#9E3B26">gap list (re-entry ≤ 2)</text>
+      <text x="945" y="244" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="9.5" fill="#9E3B26">code gap → P6; other → owner</text>
 
       <g stroke="currentColor" stroke-width="1.4" fill="none" marker-end="url(#ar)">
         <line x1="1060" y1="334" x2="1060" y2="386"/>
       </g>
       <g>
         <rect x="975" y="388" width="170" height="26" rx="1" fill="currentColor" fill-opacity=".08" stroke="currentColor" stroke-width="1.4"/>
-        <text x="1060" y="406" text-anchor="middle" font-family="Archivo,sans-serif" font-weight="700" font-size="12" fill="currentColor">SHIP · rollback rehearsed</text>
+        <text x="1060" y="406" text-anchor="middle" font-family="Archivo,sans-serif" font-weight="700" font-size="12" fill="currentColor">SHIP · recovery evidence</text>
       </g>
     </svg>
     </div>
-    <figcaption>Solid edges advance; oxide-red edges send work back. A 1-1-1 split at <code>P3</code> leaves for a human verdict; a Risk-Gate No-Go returns to Phase 4 for a spec defect or to the failing track for a design defect. An acceptance gap re-enters Phase 6 as a gap list, bounded to two re-entries before the user decides. Phase 5 → 6 is both a phase boundary and an <strong>engine boundary</strong>: nothing crosses it except the loop contract.</figcaption>
+    <figcaption>Solid edges advance; oxide-red edges send work back. A 1-1-1 split at <code>P3</code> returns to its verdict owner. The drawn risk return is the spec-defect example, not an instruction to use P4 for every failure: demand → P1, spec → P4, design → P5, code → P6. Acceptance-triggered re-entry is bounded to two total; retain unaffected evidence. Missing required external evidence blocks rather than demanding a code rewrite. Phase 5 → 6 is both a phase boundary and an <strong>engine boundary</strong>: nothing crosses it except the loop contract.</figcaption>
   </figure>
 
   <div class="callout"><b>Convergence is not correctness.</b> A loop that stops producing changes has only proven that it passes its own tests. What guards Ship is the independent acceptance verification, never the loop's own exit reason.</div>
@@ -433,14 +433,14 @@ a:focus-visible{outline:2px solid var(--gate);outline-offset:2px}
   <p class="sec-note">Feature Lifecycle is opt-in, never a default. It is for the case where an upstream gap — a missed user need, a weak spec, a hidden architecture risk, UX friction — is materially costly to discover <em>after</em> implementation. When that is not true, a lighter chain is the correct chain.</p>
   <div class="cols">
     <div class="panel yes">
-      <h3>Use it when at least 3 apply</h3>
+      <h3>Investigate remaining uncertainty, not a count</h3>
       <ul>
-        <li>New customer-facing feature with a UI surface — not a backend-only fix</li>
-        <li>Cross-team impact: business, engineering and design</li>
-        <li>Reversibility cost is high — DB migration, API contract change, brand-visible UX</li>
-        <li>Acceptance criteria are not pre-supplied and must be derived from user need</li>
-        <li>An architecture decision is required, not just an implementation</li>
-        <li>5+ files / 2+ modules / 2+ days estimated</li>
+        <li>Name what remains unresolved in need, scope or architecture</li>
+        <li>Explain what discovering it after implementation would cost</li>
+        <li>Identify proportionate pre-build work that can reduce it</li>
+        <li>Choose this chain only when that benefit exceeds orchestration cost and a narrower path cannot discharge it</li>
+        <li>An irreversible two-file migration with unresolved recovery may qualify</li>
+        <li>A settled eight-file UI does not qualify by size, team count or the word feature</li>
       </ul>
     </div>
     <div class="panel no">
@@ -462,13 +462,13 @@ a:focus-visible{outline:2px solid var(--gate);outline-offset:2px}
 <!-- ========== 3. MODES ========== -->
 <section id="modes">
   <h2><span class="num">03</span>Modes and dispatch</h2>
-  <p class="sec-note">The default mode is <code>AUTORUN_FULL</code>. There is exactly one human checkpoint — the Phase 0 boundary confirm. Downstream, only an internal gate, the loop circuit breaker, the engine-availability check, or the budget ceiling stops the run.</p>
+  <p class="sec-note"><code>AUTORUN_FULL</code> is the default execution preference, not consent or delegated product authority. Before expensive work, bind an explicit grant to the goal (or expressly constrained goal-selection delegation), scope, actions and budget. Reuse a sufficient grant without duplicate approval. Bare invocation permits only a bounded read-only proposal, no lifecycle spawns. Existing Ask First boundaries remain.</p>
 
   <div class="cols">
     <div>
       <h3>Subcommands</h3>
-      <pre>feature-lifecycle &lt;description&gt;  # goal supplied → Phase 1
-feature-lifecycle                # autonomous → Phase 0
+      <pre>feature-lifecycle &lt;description&gt;  # admission + explicit grant → Phase 1
+feature-lifecycle                # bounded proposal; no silent launch
 feature-lifecycle bootstrap      # explicit form (alias: auto)
 feature-lifecycle resume         # from the last checkpoint
 
@@ -478,7 +478,7 @@ db_change=  budget=</pre>
       <p class="sec-note" style="margin-top:14px">A bare invocation with a resumable checkpoint present <strong>never picks silently</strong>. It names the checkpoint and asks which — resume it, or start a fresh bootstrap. Resuming the wrong run and re-deriving a finished one cost the same as each other's mistake.</p>
     </div>
     <div>
-      <h3>Behaviour at the Phase 0 boundary confirm</h3>
+      <h3>Behavior at the existing launch boundary</h3>
       <div class="tw">
         <table>
           <thead><tr><th>Mode</th><th>Behaviour</th></tr></thead>
@@ -486,7 +486,7 @@ db_change=  budget=</pre>
             <tr><td><code>INTERACTIVE</code></td><td>Always confirm; the user may edit the goal before proceeding</td></tr>
             <tr><td><code>GUIDED</code></td><td>Always confirm; the user approves or aborts</td></tr>
             <tr><td><code>AUTORUN</code></td><td>Explicit Y/N; <strong>defaults to abort</strong> on no response</td></tr>
-            <tr><td><code>AUTORUN_FULL</code></td><td>Show the goal with rationale, wait 60s for objection, then proceed. Any input inside the window aborts and re-runs Phase 0 with the objection as a hint</td></tr>
+            <tr><td><code>AUTORUN_FULL</code></td><td>Proceed within an explicit sufficient grant; otherwise request it once, checkpoint and stop without an answer. Silence is not consent. No timed objection window is assumed.</td></tr>
           </tbody>
         </table>
       </div>
@@ -516,7 +516,7 @@ db_change=  budget=</pre>
       <div class="pc-id"><span class="k">P0</span><span class="role">breadth + hub</span></div>
       <div class="pc-body">
         <h4>Bootstrap — autonomous goal discovery</h4>
-        <p class="focus">Scan project state and external signals, synthesise 3–5 candidate goals, score them with ICE / RICE / WSJF, and select one. On a greenfield repo with no external source configured, fall back to "propose from the project scan only" and flag every candidate <code>confidence: low</code> — the fallback is declared, never silent.</p>
+        <p class="focus">Within explicit authority, scan available signals and propose plausible distinct goals without filling a quota. ICE/RICE/WSJF is optional when suitable: record each input’s source, population, date and bias; missing input stays unknown. Repository activity does not establish objective business priority. On a greenfield repo with no external source configured, fall back to "propose from the project scan only" and flag every candidate <code>confidence: low</code> — the fallback is declared, never silent.</p>
         <ul class="rows">
           <li>project-scan</li>
           <li data-req="cond">user-signal<span class="q">?</span></li>
@@ -531,7 +531,7 @@ db_change=  budget=</pre>
       <div class="pc-gate">
         <span class="lab">exit gate</span>
         <code>exactly one auto_selected_goal, carrying evidence_refs and rejected_alternatives, boundary-confirmed</code>
-        <p class="fail"><b>on failure</b>No candidates → abort and suggest invoking with an explicit goal. All candidates below the ICE threshold → present the top 3 for manual selection. Boundary rejected → abort and re-run Phase 0 with the objection as a hint.</p>
+        <p class="fail"><b>on failure</b>No candidates → abort and suggest invoking with an explicit goal. Unsupported priority → present the unresolved choice or stop; do not invent scores or a winner. Boundary rejected → abort and re-run Phase 0 with the objection as a hint.</p>
       </div>
     </article>
 
@@ -539,9 +539,9 @@ db_change=  budget=</pre>
       <div class="pc-id"><span class="k">P1</span><span class="role">breadth</span></div>
       <div class="pc-body">
         <h4>Discovery — demand and reuse</h4>
-        <p class="focus">Synthetic user demands across 3+ personas, paired with the prompts that elicited them, plus an evidence anchor. On an existing product, a friction baseline of the current flow. On any existing repository, the <strong>reuse scan is mandatory</strong>.</p>
+        <p class="focus">Decision-driving needs carry provenance, claim-specific support and status. Synthetic scenarios are optional hypotheses, not observations; one ticket expanded into twenty personas remains one observation. A direct user-stated need is intent authority, not population research. On an existing product, a friction baseline of the current flow. On any existing repository, the <strong>reuse scan is mandatory</strong>.</p>
         <ul class="rows">
-          <li>demand-modeling</li>
+          <li data-req="cond">demand-modeling<span class="q">?</span></li>
           <li>evidence-validation</li>
           <li data-req="cond">friction-baseline<span class="q">?</span></li>
           <li data-req="cond">reuse-scan<span class="q">?</span></li>
@@ -549,7 +549,7 @@ db_change=  budget=</pre>
       </div>
       <div class="pc-gate">
         <span class="lab">exit gate</span>
-        <code>the top-3 demands each carry both a persona rationale and an evidence anchor</code>
+        <code>decision-driving needs have source, supported scope and status; unsupported demand remains hypothesis, with explicit authorization for any bounded experiment</code>
         <p class="fail"><b>guards against</b>A second implementation of something the repo already ships. It is found in Phase 1 for the cost of a scan, or in Phase 6 for the cost of the whole loop.</p>
       </div>
     </article>
@@ -571,7 +571,7 @@ db_change=  budget=</pre>
       <div class="pc-id"><span class="k">P3</span><span class="role">tri-engine</span></div>
       <div class="pc-body">
         <h4>Verdict — three voices, three engines</h4>
-        <p class="focus"><code>logic</code> — does the option hold up on its own terms: assumptions, failure modes, internal contradictions? <code>human-impact</code> — who does it help, who does it cost, what does the persona set actually do with it? <code>precedent</code> — what have comparable systems already learned about this shape? <strong>One voice per engine.</strong> Three seats on one model is one model disagreeing with itself. Skipped entirely when a Spec Handoff Packet supplied the direction.</p>
+        <p class="focus"><code>logic</code> — does the option hold up on its own terms: assumptions, failure modes, internal contradictions? <code>human-impact</code> — who does it help, who does it cost, what does the persona set actually do with it? <code>precedent</code> — what have comparable systems already learned about this shape? <strong>One voice per engine.</strong> Distinct engines may still share one premise; each verdict names the evidence and oracle it actually challenged. Skipped entirely when a Spec Handoff Packet supplied the direction.</p>
         <ul class="rows"><li>deliberation</li></ul>
       </div>
       <div class="pc-gate">
@@ -595,8 +595,8 @@ db_change=  budget=</pre>
       </div>
       <div class="pc-gate">
         <span class="lab">exit gate</span>
-        <code>traceability ≥ threshold (Full ≥95% / Standard ≥85% / Lite ≥70%) ∧ L3 ACs measurable and loop-consumable ∧ a measurement contract exists</code>
-        <p class="fail"><b>on failure</b>Below threshold → re-run with a scope downgrade or refined inputs. Where the demand is genuinely unmeasurable, record that as the contract, naming what would have to exist. An unmeasurable hypothesis stated as unmeasurable is honest; one stated as an impact estimate is not.</p>
+        <code>all required / decision-critical obligations traced ∧ L3 ACs measurable with an oracle ∧ optional gaps explicit ∧ a measurement contract exists</code>
+        <p class="fail"><b>on failure</b>Missing obligation → P4 or intent owner, never an unauthorized scope downgrade. Splitting ACs, adding easy rows or relabeling must-haves cannot improve required coverage; percentages are summaries only. Where the demand is genuinely unmeasurable, record that as the contract, naming what would have to exist. An unmeasurable hypothesis stated as unmeasurable is honest; one stated as an impact estimate is not.</p>
       </div>
     </article>
 
@@ -628,7 +628,7 @@ db_change=  budget=</pre>
       <div class="pc-gate">
         <span class="lab">risk gate · four axes, parallel</span>
         <code>blast_radius.verdict ∈ {Go, Conditional-Go}<br>∧ failure_modes.high_rpn_count == 0<br>∧ friction.gate_pass<br>∧ security.unmitigated_high == 0</code>
-        <p class="fail"><b>on failure</b>No-Go → the originating phase: Phase 4 for a spec defect, the failing Phase 5 track for a design defect. Plus <strong>demand↔reaction closure</strong>: if the walkthrough's actual reaction diverges fatally from the predicted demand, return to Phase 4 for re-spec — <em>even when every axis nominally passes</em>.</p>
+        <p class="fail"><b>on failure</b>No-Go → the first wrong decision: demand P1, spec P4, design P5. The <strong>demand↔reaction check</strong> labels real observation, existing behavior, prototype test or synthetic walkthrough. Synthetic agreement cannot validate synthetic demand; unknown reaction remains unknown. A changed product goal reopens launch authority.</p>
       </div>
     </article>
 
@@ -677,7 +677,7 @@ db_change=  budget=</pre>
       <div class="pc-id"><span class="k">VERIFY</span><span class="role">judge</span></div>
       <div class="pc-body">
         <h4>Acceptance verification — independent and two-sided</h4>
-        <p class="focus"><strong>Conformance:</strong> extract the L3 ACs from the spec, adversarially check the delivered implementation, emit a traceability matrix (AC → evidence → verdict). <strong>Negative pass:</strong> did the loop build anything the spec <em>forbade</em>? Walk <code>non_goals</code> and the Phase 3 scope boundary against the actual diff — new surfaces, dependencies, config, persisted state.</p>
+        <p class="focus"><strong>Conformance:</strong> Read original authorized intent and scope changes; trace obligation → AC → independent oracle/evidence → verdict. Check both the spec’s interpretation and the implementation. <strong>Negative pass:</strong> was only the authorized feature built? Walk positive scope, original intent, <code>non_goals</code> and the Phase 3 scope boundary against the actual diff — new surfaces, dependencies, config, persisted state.</p>
         <ul class="rows">
           <li>acceptance-verification</li>
           <li data-req="cond">integration-evidence<span class="q">?</span></li>
@@ -685,8 +685,8 @@ db_change=  budget=</pre>
       </div>
       <div class="pc-gate">
         <span class="lab">exit gate</span>
-        <code>conformance ≥ threshold ∧ unmet_must_haves == 0 ∧ non_goal_violations == 0<br>(integration_evidence recorded either way: E5 | unavailable)</code>
-        <p class="fail"><b>on failure</b>Escalate the gap list — unmet ACs <em>and</em> out-of-scope additions — back to Phase 6, bounded to 2 re-entries, then to the user. Never ship with an unmet must-have AC, and never ship an unratified scope violation.</p>
+        <code>unmet_required == 0 ∧ non_goal_violations == 0 ∧ required_evidence_met<br>(percentages summarize only; integration_evidence: E5 | unavailable, with missing required evidence blocking)</code>
+        <p class="fail"><b>on failure</b>Return to the first wrong decision; only code defects and unratified additions go directly to P6. Acceptance-triggered re-entry remains bounded to 2 total. Retain unaffected artifacts; missing external evidence is blocked-external. Never ship with an unmet must-have AC, and never ship an unratified scope violation.</p>
       </div>
     </article>
 
@@ -703,8 +703,8 @@ db_change=  budget=</pre>
       </div>
       <div class="pc-gate">
         <span class="lab">exit gate</span>
-        <code>rollback_verified ∈ {true, declared-impossible(reason)} ∧ the Delivery Report is emitted</code>
-        <p class="fail"><b>note</b><code>declared-impossible(reason)</code> is a legitimate outcome and a materially different one from a plan that was simply never run. Collapsing the two is how an unrehearsed rollback ships looking rehearsed.</p>
+        <code>required recovery evidence met ∧ Delivery Report emitted; impossible rollback additionally needs verified controls + explicit residual-risk acceptance</code>
+        <p class="fail"><b>note</b><code>declared-impossible(reason)</code> is an honest state, not permission to ship. Verify applicable compensating controls and obtain explicit acceptance of residual irreversible risk; no assertion or silence replaces missing runtime evidence. A completed local artifact or blocked PR is not release readiness.</p>
       </div>
     </article>
 
@@ -714,7 +714,7 @@ db_change=  budget=</pre>
 <!-- ========== 5. LOOP ========== -->
 <section id="loop">
   <h2><span class="num">05</span>Phase 6 — the per-cycle spawn sequence</h2>
-  <p class="sec-note">The loop is where maker ≠ checker has to hold. Implementation on <code>build</code>, review and tests on <code>judge</code>, long-flow E2E on <code>breadth</code>. The vertical jumps between lanes <em>are</em> the mechanism: a test written on the same engine that wrote the code is the nodding loop with an extra step.</p>
+  <p class="sec-note">The loop is where maker ≠ checker has to hold. Implementation on <code>build</code>, review and tests on <code>judge</code>, long-flow E2E on <code>breadth</code>. The lane split separates maker and checker, not the oracle automatically. Even when test author and final verifier share judge, use separate contexts and original intent/source constraints; report shared premises.</p>
 
   <figure>
     <div class="scroll">
@@ -820,17 +820,17 @@ db_change=  budget=</pre>
   <div class="cols">
     <div class="panel">
       <h3>Conformance — was the spec built?</h3>
-      <p style="font-size:14px;color:var(--muted);margin:0 0 10px">Extract the L3 ACs, adversarially check the delivered implementation, emit a traceability matrix of AC → evidence → verdict.</p>
-      <p style="font-size:13px;margin:0"><code>conformance ≥ threshold</code> · <code>unmet_must_haves == 0</code></p>
+      <p style="font-size:14px;color:var(--muted);margin:0 0 10px">Read authorized intent and source constraints; map obligation → AC → independent oracle/evidence → verdict. Percentages cannot waive missing required outcomes.</p>
+      <p style="font-size:13px;margin:0"><code>unmet_required == 0</code> · percentages summarize only; must-have and decision-critical obligations remain required</p>
     </div>
     <div class="panel">
       <h3>Negative pass — was <em>only</em> the spec built?</h3>
-      <p style="font-size:14px;color:var(--muted);margin:0 0 10px">Walk <code>non_goals</code> and the Phase 3 scope boundary against the actual diff: new surfaces, new dependencies, new config, new persisted state, behavior outside the declared boundary.</p>
+      <p style="font-size:14px;color:var(--muted);margin:0 0 10px">Walk original intent, positive scope, <code>non_goals</code> and the Phase 3 scope boundary against the actual diff: new surfaces, new dependencies, new config, new persisted state, behavior outside the declared boundary.</p>
       <p style="font-size:13px;margin:0"><code>non_goal_violations == 0</code> — every out-of-boundary change is either reverted or explicitly ratified by the user, never silently kept.</p>
     </div>
   </div>
 
-  <div class="callout"><b>Independence here is model independence, not merely context independence.</b> A fresh context on the same model carries the same blind spot into the room that was convened to find it. So the verification runs on <code>judge</code>, and never on the engine that built — <em>wherever a second engine is reachable</em>. Where only one was, the pass still runs and the Delivery Report records <code>engine_independence: context-only</code> rather than implying a guarantee the run did not have.</div>
+  <div class="callout"><b>Model, context, evidence and oracle independence are separate.</b> Distinct CLIs can use the same model; three models can share a wrong premise. Verification runs in a fresh context on <code>judge</code>, off build wherever a second engine is reachable; one engine remains <code>context-only</code>. Name each independent expectation source and the shared premises rather than counting votes.</div>
 
   <h3>Integration evidence — a conditional third pass</h3>
   <div class="tw">
@@ -838,11 +838,11 @@ db_change=  budget=</pre>
       <thead><tr><th>Condition</th><th>Action</th></tr></thead>
       <tbody>
         <tr><td>An integration surface exists and is reachable — a preview environment, a staging deploy, a policy or attestation check</td><td>Run the must-have ACs against it; record <code>integration_evidence: E5</code> and any AC the real surface failed</td></tr>
-        <tr><td>No such surface exists</td><td>Record <code>integration_evidence: unavailable</code> with what would have to exist</td></tr>
+        <tr><td>No surface exists or it is unreachable</td><td>Record <code>integration_evidence: unavailable</code>; block readiness when risk-specific evidence required by P5 remains missing, and name what would supply it</td></tr>
       </tbody>
     </table>
   </div>
-  <p class="sec-note" style="margin-top:14px">Findings here do not block the exit gate on their own — an unreachable staging environment is not the run's fault. An AC that <strong>passes locally and fails on the real surface</strong> does block: that is a conformance failure the local oracle missed, and it re-enters Phase 6 like any other.</p>
+  <p class="sec-note" style="margin-top:14px">P5 declares necessary integration/recovery evidence for concrete material failure modes. Missing required evidence blocks readiness regardless of blame; high-risk migration, payment/auth or external contract paths cannot rely on mocks alone where the critical failure is not observable. Low-risk reversible work may use the existing independent E3 floor when adequate, without manufacturing a staging requirement. Real-surface failure blocks and returns to its actual cause; never perform unauthorized production actions to obtain evidence.</p>
 </section>
 
 <!-- ========== 7. ENGINES ========== -->
@@ -906,16 +906,16 @@ db_change=  budget=</pre>
     <table>
       <thead><tr><th>Gate</th><th>Fires at</th><th>Passing condition</th><th>On failure</th></tr></thead>
       <tbody>
-        <tr><td><b>Boundary confirm</b></td><td>Phase 0 exit (autonomous only)</td><td>Per the Modes table</td><td>Abort; re-run Phase 0 with the objection as a hint</td></tr>
+        <tr><td><b>Boundary confirm</b></td><td>Before launch; P0 exit for discovery</td><td>Explicit grant per Modes</td><td>Proposal/checkpoint and stop without an answer; no silent launch</td></tr>
         <tr><td><b>Verdict</b></td><td>Phase 3 exit</td><td>A non-split verdict with an AC seed and a scope boundary</td><td>1-1-1 split → human verdict, then re-enter Phase 3</td></tr>
-        <tr><td><b>Traceability</b></td><td>Phase 4 exit</td><td>Full ≥95% / Standard ≥85% / Lite ≥70%</td><td>Re-run the spec with a scope downgrade or refined inputs</td></tr>
-        <tr><td><b>Risk Gate</b></td><td>Phase 5 exit</td><td>All four axes: blast radius, RPN, friction, security</td><td>No-Go → the originating phase (4, or the failing 5-track)</td></tr>
-        <tr><td><b>Demand↔reaction closure</b></td><td>Phase 5, inside the Risk Gate</td><td>The walkthrough reaction does not diverge fatally from the predicted demand</td><td>Return to Phase 4 for re-spec — even when every axis nominally passes</td></tr>
+        <tr><td><b>Traceability</b></td><td>Phase 4 exit</td><td>All required and decision-critical obligations traced; optional gaps explicit</td><td>P4 or intent owner; no unilateral scope downgrade</td></tr>
+        <tr><td><b>Risk Gate</b></td><td>Phase 5 exit</td><td>All four axes: blast radius, RPN, friction, security</td><td>No-Go → first wrong decision: P1 demand, P4 spec, P5 design</td></tr>
+        <tr><td><b>Demand↔reaction check</b></td><td>Phase 5, inside the Risk Gate</td><td>Observation source stated; synthetic agreement is not validation</td><td>P1 demand / P4 spec / P5 design; changed goal → launch authority</td></tr>
         <tr><td><b>Engine roster</b></td><td>Before the first spawn</td><td>All three CLIs probed and every role bound, with any rebinding recorded</td><td>Fold by fallback order and record the degradation; never proceed on an unrecorded roster</td></tr>
         <tr><td><b>Engine availability</b></td><td>Phase 5 → 6 handoff</td><td><code>build</code> answers a spawn ∧ <code>judge</code> is a different CLI ∧ <code>max_depth ≥ 2</code> ∧ subagent tools permitted</td><td>Degradation protocol — a confirmed choice, never a silent fallback. One reachable CLI records <code>context-only</code> and proceeds</td></tr>
         <tr><td><b>Loop precondition</b></td><td>Before Phase 6</td><td>The five-point gate</td><td>Do not enter the loop; report which point failed</td></tr>
-        <tr><td><b>Acceptance verification</b></td><td>Phase 6 → Ship</td><td><code>conformance ≥ threshold ∧ unmet_must_haves == 0 ∧ non_goal_violations == 0</code></td><td>Re-enter Phase 6 with the gap list, ≤ 2 times, then escalate</td></tr>
-        <tr><td><b>Ship</b></td><td>Ship exit</td><td><code>rollback_verified ∈ {true, declared-impossible(reason)}</code> ∧ the Delivery Report emitted</td><td>Do not open the PR; rehearse, or record the reason the rehearsal is impossible</td></tr>
+        <tr><td><b>Acceptance verification</b></td><td>Phase 6 → Ship</td><td><code>unmet_required == 0 ∧ non_goal_violations == 0 ∧ required_evidence_met</code></td><td>Return to the first wrong decision; code → P6. ≤2 acceptance re-entries total, then escalate</td></tr>
+        <tr><td><b>Ship</b></td><td>Ship exit</td><td>Required recovery evidence; impossible → verified controls + explicit residual-risk acceptance; report emitted</td><td>Block release readiness on missing required evidence or authority; an impossible reason alone does not pass</td></tr>
         <tr><td><b>Budget ceiling</b></td><td>Continuously</td><td>Cumulative spend &lt; ceiling</td><td>Hard stop with a resumable checkpoint; warn at 80%</td></tr>
       </tbody>
     </table>
@@ -925,7 +925,7 @@ db_change=  budget=</pre>
 <!-- ========== 9. RUN RECORD ========== -->
 <section id="record">
   <h2><span class="num">09</span>What a run leaves behind</h2>
-  <p class="sec-note">The Delivery Report is a <em>summary</em>. It quotes a traceability percentage, a Risk-Gate verdict and a conformance number, and carries none of what they were computed from — the personas that produced no usable demand, the FMEA rows below the RPN threshold, the architecture the ADR rejected, the reuse scan's near-misses. Each is produced by an expensive phase, read once by the next phase, and then gone. So every run writes a <strong>run record</strong> to <code>.agents/feature-lifecycle/runs/&lt;run-id&gt;/</code>, opened before the first spawn and committed with the change it describes. In autonomous mode those two demands collide — Phase 0's scan spawns before a goal exists to name the directory after — so the id is two-stage: a provisional <code>YYYY-MM-DD-bootstrap-&lt;n&gt;</code> at launch, renamed once to the goal slug at the boundary confirm, before Phase 1 opens.</p>
+  <p class="sec-note">The Delivery Report is a <em>summary</em>. It quotes a traceability percentage, a Risk-Gate verdict and a conformance number, and carries none of what they were computed from — optional hypothetical scenarios and the actual evidence that supports the selected needs, the FMEA rows below the RPN threshold, the architecture the ADR rejected, the reuse scan's near-misses. Each is produced by an expensive phase, read once by the next phase, and then gone. So every run writes a <strong>run record</strong> to <code>.agents/feature-lifecycle/runs/&lt;run-id&gt;/</code>, opened before the first spawn and committed with the change it describes. In autonomous mode those two demands collide — Phase 0's scan spawns before a goal exists to name the directory after — so the id is two-stage: a provisional <code>YYYY-MM-DD-bootstrap-&lt;n&gt;</code> at launch, renamed once to the goal slug at the boundary confirm, before Phase 1 opens.</p>
 
   <div class="cols">
     <div>
@@ -961,7 +961,7 @@ artifacts/
           </tbody>
         </table>
       </div>
-      <p class="sec-note" style="margin-top:14px">Quoting the criterion rather than paraphrasing is what makes the record auditable: a gate written down as "traceability OK" cannot be checked against a threshold that was 85%.</p>
+      <p class="sec-note" style="margin-top:14px">Quoting the criterion rather than paraphrasing is what makes the record auditable: a gate written down as "traceability OK" cannot show which original required obligation is still missing.</p>
     </div>
   </div>
 
@@ -1117,8 +1117,8 @@ artifacts/
     <li data-n="01"><b>A loop that converges is not a loop that is correct.</b> Convergence means the iteration stopped producing changes; it can stop on an implementation that passes its own tests and misses the spec entirely.</li>
     <li data-n="02"><b>Conformance alone is a one-sided test.</b> An implementation can satisfy every AC <em>and</em> have grown a surface, a dependency or a table nobody specified. The negative pass is what makes the scope boundary load-bearing rather than decorative.</li>
     <li data-n="03"><b>An upstream packet collapses derivation, not verification.</b> Arriving from a spec packet means Phases 1–4 become validation — not that the Risk Gate or the acceptance verification get lighter.</li>
-    <li data-n="04"><b>Three seats on one model is not a tri-engine verdict.</b> Phase 3's cost is justified by three engines actually disagreeing; a single model arguing with itself converges on its own priors and returns a confident split that means nothing.</li>
-    <li data-n="05"><b>Conformance is not validity.</b> The verification proves the spec was built; it is silent on whether the demand the spec came from existed. That is why the measurement contract leaves the run open rather than closed.</li>
+    <li data-n="04"><b>Three seats on one model is not a tri-engine verdict.</b> Each verdict must name the premise and evidence it tested; three engines sharing the same wrong assumption are not independent corroboration.</li>
+    <li data-n="05"><b>Conformance is not validity.</b> Verification checks original intent, the spec and implementation, but does not establish population demand or the eventual product outcome. That is why the measurement contract leaves the run open rather than closed.</li>
     <li data-n="06"><b>A silent runner swap invalidates the run's cost figures.</b> Iteration ceilings and budget envelopes are scored against one named engine. A fallback nobody was told about produces numbers that read against the wrong model.</li>
     <li data-n="07"><b>A clone's declared parity ceiling is a constraint, not a defect.</b> A loop given a parity harness will happily "fix" a ceiling-bound behavior and move the product off its baseline.</li>
     <li data-n="08"><b>Phase 1 on an existing repo means a reuse scan first.</b> A second implementation of something the repo already ships is discovered in Phase 1 for the cost of a scan, or in Phase 6 for the cost of the whole loop.</li>

@@ -1,7 +1,7 @@
 # Feature Lifecycle Run Record
 
 **Purpose:** Where a run's analysis lives on disk — the directory, the document per phase, the artifacts that outlive their phase, the write discipline that makes a checkpoint trustworthy, and what `resume` reads.
-**Read when:** Launching a run (the directory is created before the first spawn), sealing any phase at its exit gate, resuming an aborted run, or deciding whether something belongs here, in the journal, or in the Delivery Report.
+**Read when:** Launching an admitted, authorized run (the directory is created before the first spawn, not for an unapproved read-only proposal), sealing any phase at its exit gate, resuming an aborted run, or deciding whether something belongs here, in the journal, or in the Delivery Report.
 
 `SKILL.md` § Always requires every phase-boundary artifact to be persisted as a resumable checkpoint. This file is what that sentence resolves to. Without it, "persist the checkpoint" names a location nobody agreed on, and `resume` reads a file whose shape nothing guarantees.
 
@@ -23,7 +23,7 @@
 
 ## Why a Record At All
 
-The Delivery Report is a **summary emitted to the caller**. It carries the traceability percentage, the Risk-Gate verdict, and the conformance number — and it carries none of what those numbers were computed from. The persona set that produced the top-3 demands, the four candidate goals that lost to the selected one, the FMEA rows that scored below the RPN threshold, the reuse scan's near-misses, the architecture options the ADR rejected: each is produced by an expensive phase, read once by the next phase, and then gone.
+The Delivery Report is a **summary emitted to the caller**. It carries the traceability percentage, the Risk-Gate verdict, and the conformance number — and it carries none of what those numbers were computed from. The persona set that produced the decision-driving needs, the actual candidate goals not selected, the FMEA rows that scored below the RPN threshold, the reuse scan's near-misses, the architecture options the ADR rejected: each is produced by an expensive phase, read once by the next phase, and then gone.
 
 That loss is not free in three specific ways:
 
@@ -124,7 +124,7 @@ One shape, learned once, applied to all nine.
 The typed artifact the phase emitted, or a link to it under `artifacts/` where it is one. This is the part the next phase consumes and the Delivery Report summarises.
 
 ### `## Findings`
-**What the phase learned that its own artifact does not carry.** The artifact is the decision; the findings are what the decision was made against and then dropped — the evidence that did not make the top three, the near-miss the reuse scan surfaced, the persona whose demand contradicted the others, the axis that passed at the edge of its threshold.
+**What the phase learned that its own artifact does not carry.** The artifact is the decision; the findings are what the decision was made against and then dropped — the evidence that did not make the selected needs, the near-miss the reuse scan surfaced, the persona whose demand contradicted the others, the axis that passed at the edge of its threshold.
 
 This is the section the chain exists to produce and the only one nothing else records. An empty `## Findings` on P0, P1 or P5 means either the phase did no work or the work was lost — and on exactly those phases, losing it is the whole cost of the phase.
 
@@ -142,15 +142,15 @@ What each phase's `## Findings` and `## Outcome` are expected to carry beyond th
 
 | Document | Outcome carries | Findings worth keeping |
 |----------|-----------------|------------------------|
-| `00-bootstrap.md` | `auto_selected_goal` with its evidence refs and score | Every signal source that was and was not reachable; the scoring framework chosen and why; each candidate's score, not just the winner's; `confidence: low` flags and their cause |
-| `01-discovery.md` | The top-3 demands with persona rationale and evidence anchor | The personas that produced no usable demand; the reuse scan's near-misses — a module that *almost* covers the need is the finding that changes the design; the friction baseline's measured values |
+| `00-bootstrap.md` | `auto_selected_goal` with its evidence refs and supported comparison, including unknown inputs | Every signal source that was and was not reachable; the scoring framework chosen and why; each comparison's sourced inputs, missing inputs and bias, not just the winner; `confidence: low` flags and their cause |
+| `01-discovery.md` | Decision-driving needs with provenance, source, supported scope and hypothesis/observation status | Where synthetic scenarios were useful, their hypothesis status and limits; the reuse scan's near-misses — a module that *almost* covers the need is the finding that changes the design; the friction baseline's measured values |
 | `02-ideate.md` | ≥2 comparable decision candidates | What Expand produced before Subtract cut it, and the cut criterion. The subtracted set is the part that never survives to the report |
-| `03-verdict.md` | The verdict: option, AC seed, scope boundary, failure conditions | **Each voice's position separately**, and where they disagreed. A merged verdict hides whether the three engines actually diverged — which is the only thing justifying Phase 3's cost. `simulated_voices` named here too |
-| `04-spec.md` | Links to `acceptance-criteria.md`, `scope-boundary.md`, `measurement-contract.md`; the traceability matrix and its percentage | Requirements that resisted a measurable AC and how they were resolved; what `scope-cutting` removed; where the measurement contract is weak or unmeasurable, and what would have to exist |
+| `03-verdict.md` | The verdict: option, AC seed, scope boundary, failure conditions | **Each voice's position separately**, the premise/evidence/oracle it challenged, and shared inputs. Disagreement or distinct engines alone does not establish independence. `simulated_voices` named here too |
+| `04-spec.md` | Links to `acceptance-criteria.md`, `scope-boundary.md`, `measurement-contract.md`; the obligation-to-AC traceability matrix and its summary percentage | Requirements that resisted a measurable AC and how they were resolved; what `scope-cutting` removed; where the measurement contract is weak or unmeasurable, and what would have to exist |
 | `05-design.md` | ADR link(s), API/schema deltas, UX direction and token summary; the four-axis Risk-Gate result | The full FMEA table including rows below the RPN threshold; the blast-radius map; the friction walkthrough's measured values; the security review's `no-surface` claims **with their evidence**; any Conditional-Go condition and who owns it |
 | `06-loop.md` | Convergence reason, iteration count, cost per task, circuit-breaker status | Per cycle: what changed, what `code-review` flagged, and Δ. A loop that hit its cap is unreadable later without this; the loop-precondition verdict and the runner it was scored against |
-| `07-verification.md` | Link to `acceptance-matrix.md`; conformance %, `unmet_must_haves`, `non_goal_violations`, `integration_evidence` | Every AC whose evidence sits below the E3-with-independent-oracle floor and is therefore `unverified` rather than verified; each out-of-boundary change found, and whether it was reverted or ratified — **by whom** |
-| `08-ship.md` | PR link, release plan, `rollback_verified` | What the rollback rehearsal actually did, or the precise reason it is `declared-impossible`; the open `hypothesis-open` residual and where its number will be read |
+| `07-verification.md` | Link to `acceptance-matrix.md`; obligation/AC/oracle evidence, percentage summary, `unmet_must_haves`, `unmet_required`, `non_goal_violations`, required evidence status | Every AC whose evidence sits below the E3-with-independent-oracle floor and is therefore `unverified` rather than verified; each out-of-boundary change found, and whether it was reverted or ratified — **by whom** |
+| `08-ship.md` | PR link, release plan, `rollback_verified` | What rollback actually exercised, or its impossible reason, verified compensating controls and explicit residual-risk acceptance; missing evidence blocks readiness; the open `hypothesis-open` residual and where its number will be read |
 
 ## Standalone Artifacts
 
@@ -209,6 +209,9 @@ Rewriting instead of appending produces a run whose history contains no failed g
 **Re-bind:** artifacts/acceptance-criteria.md, artifacts/scope-boundary.md,
              artifacts/measurement-contract.md
 **Stopped because:** budget ceiling reached at 05-design.md (open)
+
+## Authorization
+[source of explicit user grant; goal or constrained goal-selection delegation; scope; action limits; approved budget ceiling]
 
 ## Engine roster
 [the engine_roster block of reference/engine-roster.md]

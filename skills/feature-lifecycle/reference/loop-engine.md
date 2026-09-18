@@ -50,7 +50,7 @@ The Phase 5 → Phase 6 boundary is **both a phase boundary and an engine bounda
 
 **`instrumentation` is what keeps autonomous mode from going blind.** When Phase 0 selected the goal from `metric-signal`, a feature shipped without the events behind its own measurement contract is invisible to the next Phase 0 scan — so each `feature-lifecycle bootstrap` run adds a surface the following run cannot see. The blind spot compounds silently, and it compounds fastest on exactly the features the loop was most confident about.
 
-A test written on the same engine that wrote the code is the nodding loop with an extra step. Putting `test-authoring` on `judge` is what makes precondition #3 structural rather than a line in a prompt — and it is the first thing a degraded roster gives up, which is why the degradation is recorded.
+Putting `test-authoring` on `judge` separates the maker from the checker; it does not make an oracle independent. Record the expectation source, not just the engine. The final acceptance pass uses a fresh context even when it shares the test-authoring engine, and checks original intent/source constraints rather than inheriting the test author's interpretation (`reference/contracts.md` §3).
 
 Per-cycle sequence:
 
@@ -118,7 +118,7 @@ A lower ceiling is not a penalty for a slower engine. Confusing the two produces
 | Loop | Bound | Exit reasons |
 |------|-------|--------------|
 | **Implementation loop** | Per the table above | `ACCEPT` · `diminishing-returns (Δ < ε)` · `cap-reached` · `BLOCK` |
-| **Acceptance-gap loop** | `loop ≤ 2 cycles` (default N=2) — re-enter Phase 6 with the gap list, then escalate | `ACCEPT` · `cap-reached` → user decision · `BLOCK` |
+| **Acceptance-gap loop** | `loop ≤ 2 re-entries total` (default N=2) — return to the first wrong decision; code gaps to Phase 6, then escalate | `ACCEPT` · `cap-reached` → user decision · `BLOCK` |
 
 On any non-`ACCEPT` exit, the Delivery Report states which acceptance criteria remain unmet and the residual gap. The chain never ships a silent partial.
 
@@ -126,16 +126,18 @@ On any non-`ACCEPT` exit, the Delivery Report states which acceptance criteria r
 
 ## Acceptance Verification (Phase 6 → Ship gate)
 
-The driver detects **loop convergence** — the iteration stopped producing changes. Convergence is not correctness: a loop can converge on an implementation that passes its own tests and does not satisfy the spec. Ship is therefore gated on an independent acceptance verification against the Phase 4 L3 ACs, closing the traceability loop Phase 4 opened.
+The driver detects **loop convergence** — the iteration stopped producing changes. Convergence is not correctness: a loop can converge on an implementation that passes its own tests and does not satisfy the spec. Ship is therefore gated on independent verification from authorized intent through Phase 4 L3 ACs to implementation; a spec that omitted or misread the requested outcome cannot certify itself.
 
 | Pass | Role | Pass criterion |
 |------|------|----------------|
-| **Conformance** (`judge`) | Extract the L3 ACs from the spec, adversarially check the delivered implementation for conformance, emit a traceability matrix (AC → evidence → verdict) | Conformance ≥ the scope threshold (Full ≥95% / Standard ≥85% / Lite ≥70%), zero unaddressed **must-have** ACs |
-| **Negative pass** (`judge`) | Check the inverse: did the loop build anything the spec **forbade**? Walk `non_goals` / out-of-scope and the Phase 3 scope boundary against the actual diff — new surfaces, new dependencies, new config, new persisted state, behavior outside the declared boundary | Zero non-goal violations; every out-of-boundary change is either reverted or **explicitly ratified by the user**, never silently kept |
+| **Conformance** (`judge`) | Read original authorized intent and scope changes, then map obligation → AC → independent oracle/evidence → verdict. Check the spec interpretation as well as implementation | `unmet_required == 0` (must-have and decision-critical); no unauthorized omission/demotion; optional gaps explicit. Percentages summarize, never waive obligations |
+| **Negative pass** (`judge`) | Check whether only the authorized feature was built. Walk positive scope, original intent, `non_goals` / out-of-scope and the Phase 3 scope boundary against the actual diff — new surfaces, new dependencies, new config, new persisted state, behavior outside the declared boundary | Zero non-goal violations; every out-of-boundary change is either reverted or **explicitly ratified by the user**, never silently kept |
 
 Conformance alone is a one-sided test. An implementation can satisfy every AC **and** have grown a feature nobody asked for, a dependency nobody approved, or a table nobody specified. An autonomous loop is exactly the setting where that happens, because "add a little more" always looks like progress from inside the loop. The negative pass is what makes the scope boundary load-bearing rather than decorative.
 
-Both passes are distinct from the in-loop `code-review` (code quality) and `test-authoring` (tests pass). The acceptance verification verifies **meaning**: that what was built is what the spec required, and *only* that. It runs on the `judge` engine, which is never the engine that built — including under the degradation protocol, wherever a second engine is reachable — so the verifier shares neither context nor model with the builder. That second half is the point: a fresh context on the same model carries the same blind spot into the room that was convened to find it. Where only one engine was ever reachable, the pass still runs and the Delivery Report records `engine_independence: context-only` rather than implying an independence the run did not have.
+Both passes are distinct from in-loop code quality and passing tests. The verifier receives original authorized intent, AC/scope revisions, source constraints and required evidence, not builder reasoning or the test author's conclusion as an oracle. It runs in a fresh context on `judge`, off the building engine wherever a second engine is reachable; one engine remains `context-only`. Report model, context, evidence and oracle independence separately (`reference/contracts.md` §3). Engine diversity alone proves none of the shared premises.
+
+A private enabling change necessary for an existing AC, with no new outward behavior, permissions, data use or commitments, can stay within scope; record its rationale and verify its risk. A new external surface, dependency or persistence behavior is not implicitly authorized by calling it enabling: check the existing boundary, otherwise revert or obtain explicit ratification.
 
 ### Integration evidence (conditional third pass)
 
@@ -144,14 +146,12 @@ Where the workspace exposes a real integration surface — a preview environment
 | Condition | Action |
 |-----------|--------|
 | An integration surface exists and is reachable | Run the must-have ACs against it; record `integration_evidence: E5` and any AC the real surface failed |
-| No such surface exists | Record `integration_evidence: unavailable` with what would have to exist |
+| No such surface exists or it is unreachable | Record `integration_evidence: unavailable`, missing required evidence and what would supply it; block readiness if the P5 requirement is unmet |
 
-It is conditional because the surface may genuinely not exist, and **explicit** because the alternative is a run that tops out at `E3` while reading as though it had been integration-tested. A feature whose stated trigger was "expensive to reverse" and that never touched a real integration surface before merge has a gap between its ambition and its evidence; naming the gap is the minimum, and closing it where a preview environment already exists is nearly free.
+P5 owns the risk-specific evidence requirement; VERIFY checks whether the evidence actually discharges it. A missing or unreachable surface does not excuse a critical untested migration, payment/auth path or external contract. Conversely, low-risk reversible work may pass with the existing independent E3 floor when that suffices; record why E5 is not required. A local-green/real-surface-red AC blocks regardless of blame, and routes by the cause. Do not perform unauthorized production actions to obtain evidence.
 
-Findings here do not block the exit gate on their own — an unreachable staging environment is not the run's fault. An AC that **passes locally and fails on the real surface** does block: that is a conformance failure the local oracle missed, and it re-enters Phase 6 like any other.
+**Exit gate:** `unmet_required == 0 ∧ non_goal_violations == 0 ∧ required_evidence_met`, with `integration_evidence` recorded. `required_evidence_met` means each P5 integration/recovery requirement applicable at this boundary has supporting observations and an independent oracle, not just an E-level label. Missing requirements or an unjustified low floor return to P5; missing evidence remains blocked. Reporting a completed local artifact is not declaring it safe to ship.
 
-**Exit gate:** `conformance ≥ threshold ∧ unmet_must_haves == 0 ∧ non_goal_violations == 0`, with `integration_evidence` recorded either way.
+On failure, identify the first wrong decision, not the immediately previous phase: unsupported demand → P1; infeasible option → P2; unresolved choice → P3; missing/misinterpreted/unbuildable AC → P4/spec owner; architecture or interaction defect → the owning P5 track; implementation defect or unratified addition → P6 (revert or ask). A changed goal reopens launch authority. An unavailable required surface is `blocked-external`, not a request to rewrite correct code. Revalidate only artifacts dependent on the changed decision; retain unaffected evidence with its source. Acceptance-triggered re-entry remains bounded to **2 total**, even when it travels upstream, then escalates; no reset via scope edits. Never ship an unmet required AC or an unratified scope violation.
 
-On fail, escalate the gap list — unmet ACs **and** out-of-scope additions — back to Phase 6; the driver re-enters the loop with it as added contract, bounded to 2 re-entries, then escalates to the user. Never ship with an unmet must-have AC, and never ship an unratified scope violation.
-
-Evidence grading for an acceptance claim → `reference/contracts.md` §3. The chain's floor: every must-have AC is evidenced at **E3 with an independent oracle or above**; an AC backed only by a test the loop wrote from the same contract is `unverified`, not `verified`.
+Evidence grading for an acceptance claim → `reference/contracts.md` §3. The chain's floor: every required AC is evidenced at **E3 with an independent oracle or above**; an AC backed only by a test the loop wrote from the same contract is `unverified`, not `verified`.

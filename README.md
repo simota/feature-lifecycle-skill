@@ -25,8 +25,8 @@ ln -s "$PWD/skills/feature-lifecycle" ~/.gemini/skills/feature-lifecycle    # ag
 Then invoke it:
 
 ```
-feature-lifecycle <feature description>   # goal supplied — starts at Phase 1
-feature-lifecycle                         # autonomous — discovers the goal first, confirms once
+feature-lifecycle <feature description>   # assess admission and explicit grant before Phase 1
+feature-lifecycle                         # bounded read-only proposal; no silent launch
 feature-lifecycle bootstrap               # explicit autonomous form (aliases: auto, goal=auto)
 feature-lifecycle resume                  # continue an aborted run from its last checkpoint
 ```
@@ -151,13 +151,15 @@ Full model → `skills/feature-lifecycle/reference/engine-roster.md`.
 
 ## What it guarantees
 
+`AUTORUN_FULL` is an execution preference, not consent or product-priority delegation. Launch requires an explicit goal/scope/budget grant; a sufficient existing grant is reused. Synthetic demand stays hypothetical and missing scoring inputs stay unknown.
+
 - Every phase boundary emits a typed artifact and passes a named gate.
 - Design work runs parallel and reconverges at **one** risk gate before any code is written.
 - The implementation loop is bounded — `≤ 6` cycles by default, `≤ 4` when Claude Code is the `build` engine — and the run carries a hard budget ceiling that checkpoints rather than overruns.
-- Ship is gated on an **independent** acceptance verification: conformance (every must-have AC met) *and* a negative pass (nothing outside the declared scope was built), plus an integration-evidence pass where a real surface exists. The verifier shares neither context nor engine with the builder — and where only one engine was reachable, the report says so rather than implying otherwise.
+- Ship requires every authorized required/decision-critical obligation, an independent oracle, a negative scope pass and the risk-specific integration/recovery evidence. Percentages are summaries, not waivers. Verification checks original intent as well as the spec; model, context, evidence and oracle independence are separate claims. One engine remains honestly `context-only`.
 - Every phase writes a sealed document — outcome, findings, rejected options, and the gate's measured terms — to a committed run record, so the numbers in the report can be gone behind and a failed gate is readable after the fact.
 - A run that aborts resumes from its last good phase instead of restarting.
-- The rollback is rehearsed, not just written — or recorded as `declared-impossible` with the reason.
+- Rollback is rehearsed; `declared-impossible` is not a pass without verified compensating controls and explicit residual-risk acceptance. Missing required evidence blocks release readiness.
 - The demand the feature came from leaves as an open, stated measurement contract. The chain never marks a hypothesis closed; it refuses to ship one with no way to settle it.
 - On every exit — including aborts — a Delivery Report names what is unmet and where to resume. Never a silent partial.
 

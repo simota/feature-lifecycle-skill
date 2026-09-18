@@ -1,0 +1,20 @@
+{
+  "frozen_at": "2026-09-17T23:21:26.874133+00:00",
+  "method": "authored adversarial scenarios; expected outcomes are review judgments, not executed agents",
+  "counts": {
+    "demand": 20,
+    "independence": 20,
+    "acceptance": 30,
+    "return": 24,
+    "resume": 15,
+    "authorization": 12,
+    "options": 6,
+    "risk": 10,
+    "rollback": 10,
+    "budget": 8,
+    "specialist": 7,
+    "measurement": 6,
+    "gaming": 12
+  },
+  "sha256": "5fe472376ad2620a1203fa51901ef2082610cf00820a245ec84ec71966497278"
+}

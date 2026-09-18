@@ -15,7 +15,7 @@
 
 ## The Contract Rule
 
-Consuming a packet does **not** relax any the chain gate. The Risk Gate, the acceptance verification, and the budget envelope run unchanged. What upstream removes is **re-derivation**, never **verification**.
+First apply `SKILL.md` § Trigger Guidance; a packet is not a reason to launch a heavyweight run. For an admitted run, consuming a packet does **not** relax any chain gate. The Risk Gate, the acceptance verification, and the budget envelope run unchanged. What upstream removes is **re-derivation**, never **verification**.
 
 The corollary binds in the other direction too: the chain does not re-litigate a settled direction. If it discovers a **must-have AC that is unbuildable as written**, it returns to the spec owner rather than reinterpreting the AC locally.
 
@@ -63,7 +63,7 @@ A multi-package charter is **not** this skill's shape — it ships **one** featu
 
 ## No Packet Supplied
 
-Bare `feature-lifecycle <goal>`: the chain runs its own lightweight discovery inline — Phases 1-4 at full strength.
+Without a packet, apply admission and launch authorization first. An admitted run derives only the unresolved inputs; existing evidence is validated and reused, not silently re-researched.
 
 Two rules still bind:
 
