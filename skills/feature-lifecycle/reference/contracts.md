@@ -47,7 +47,7 @@ Two rules on top of the order:
 | 4 | **Persistent memory** — state lives outside the conversation (files / git), not in context | **amnesiac loop**: no cumulative progress | The run record's sealed phase documents (`reference/run-record.md`) plus the driver's in-loop state files. The loop satisfying this internally says nothing about the phases around it |
 | 5 | **Drift awareness** — quality can decay across iterations *even while tests keep passing* | silent structural erosion | Bound the loop (#2), read a sample of the diff each cycle, and surface erosion as a run risk — never assert convergence as quality |
 
-**The denominator is frozen before cycle 1.** The AC set, the non-goals, and the scope boundary cannot grow mid-loop. Additions are a recorded scope change that restarts the count, never a silent extension — a growing denominator rebuilds the unbounded goal under a countable name.
+**The obligations are frozen before cycle 1.** Keep the original authorized intent, obligation IDs, AC set, non-goals and scope revision. Splitting or relabeling ACs does not change required coverage. A scope change is explicit and user-authorized; it never silently resets cumulative spend or the acceptance re-entry count. Private enabling changes inside the existing behavior boundary are not new scope; new surfaces, permissions, data use or commitments are.
 
 **When a goal resists every checkable substitution**, do not loop on it and do not merely refuse: lower the action tier — build the throwaway version, run the dry run, produce the one sample — and re-enter the gate carrying the evidence that was missing. That exit is typed, not a failure.
 
@@ -67,9 +67,11 @@ What rises with each rung is not effort — it is **distance from the implementa
 | `E5` | Integration evidence | preview env, policy check, attestation, canary | Yes — the real integration surface rejects what local mocks accepted |
 | `E6` | Production observation | SLO, trace, incident, user outcome | Yes — the only rung measuring the real input distribution |
 
-**The chain's floor:** every must-have AC must be evidenced at **E3 with an independent oracle or above**. An AC whose only evidence is a test the loop wrote from the same contract that produced the code is `unverified`, not `verified` — record it that way rather than counting it toward conformance.
+**The chain's floor:** every required AC (must-have or decision-critical) must be evidenced at **E3 with an independent oracle or above**. An AC whose only evidence is a test the loop wrote from the same contract that produced the code is `unverified`, not `verified` — record it that way rather than counting it toward conformance.
 
-**The chain's ceiling is not its floor.** Where the workspace exposes a real integration surface — a preview environment, a staging deploy, a policy or attestation check — the acceptance verification takes the `E5` rung against it and records the result; where none exists, it records `integration_evidence: unavailable` rather than letting an `E3` ceiling read as an integration test (`reference/loop-engine.md` § Integration evidence).
+**The chain's ceiling is not its floor.** Where the workspace exposes a real integration surface — a preview environment, a staging deploy, a policy or attestation check — the acceptance verification takes the `E5` rung against it and records the result; where none exists, it records `integration_evidence: unavailable`, and blocks readiness when risk-specific required evidence remains missing rather than letting an `E3` ceiling read as an integration test (`reference/loop-engine.md` § Integration evidence).
+
+**Independence has four dimensions:** model identity/version, context isolation, evidence provenance, and oracle provenance. Distinct CLIs or models do not establish independent premises or expected results. Record what could falsify each critical claim and its source, separately from who ran the check. Reusing one observation or generated interpretation does not multiply evidence. A final verifier gets the original authorized intent and source constraints, not the builder's reasoning or a test author's conclusion as its oracle.
 
 **A human saying so is not a rung.** An unverified human assertion sits at E0 and is more likely to be waved through because it arrives with a name attached. Authority is scoped per domain: a product owner is authoritative for intent, not for runtime behavior.
 

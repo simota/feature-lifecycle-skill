@@ -1,11 +1,11 @@
 ---
 name: feature-lifecycle
-description: "Running a single high-stakes feature end to end — autonomous goal discovery, demand research, verdict, spec with traceable acceptance criteria, parallel tech/UX design, a four-axis risk gate, a bounded implementation loop, independent acceptance verification, and ship. Use when a feature is customer-facing, cross-team, expensive to reverse, and its acceptance criteria must be derived rather than supplied. Don't use for a defect in shipped behavior, a bounded single build whose shape is settled, spec-only work with no code, or a multi-package plan."
+description: "Deliver one feature end to end when unresolved need, scope, or architecture decisions would be costly to discover after implementation and proportionate pre-build discovery can reduce that risk. Use when that uncertainty justifies lifecycle orchestration; settled builds and requests for only a spec, design, research, or plan belong to their narrower paths."
 ---
 
 <!--
 CAPABILITIES_SUMMARY:
-- goal_discovery: Autonomous scan → propose → prioritize → select a single highest-value goal with evidence refs and rejected alternatives
+- goal_discovery: Authorized scan → evidence-bounded proposal → explicit goal selection, with unknown value and rejected alternatives visible
 - lifecycle_orchestration: Phase 0-6 + Ship chain with a typed artifact and an exit gate at every boundary
 - parallel_design: Tech track (architecture / API / schema) and UX track (sub-orchestrated where a UX orchestrator exists) run concurrently and reconverge at one gate
 - four_axis_risk_gate: FMEA + blast radius + UX friction & a11y + security and data exposure as a single go/no-go before any code is written
@@ -43,26 +43,13 @@ Feature Lifecycle is **self-contained**: it needs no hub, and no external contra
 
 ## Trigger Guidance
 
-Use The chain when the request matches **at least 3** of:
+Before any lifecycle spawn, name the deliverable, **remaining uncertainty**, cost of discovering it after implementation, and pre-build work that can reduce it. Enter for one end-to-end feature only when that benefit plausibly exceeds orchestration cost and a narrower path cannot discharge it. Record the reason in intake; do not invent a numerical value.
 
-- New customer-facing feature with a UI surface (not a backend-only fix)
-- Cross-team impact (business + engineering + design)
-- Reversibility cost is high — DB migration, API contract change, brand-visible UX
-- Acceptance criteria are not pre-supplied and must be derived from user need
-- An architecture decision is required, not just an implementation
-- 5+ files / 2+ modules / 2+ days estimated
+UI, cross-team impact, reversibility, missing ACs, architecture work and size are prompts to investigate, **not a count-based admission rule**. An irreversible two-file migration with unresolved recovery may qualify; an eight-file UI with settled ACs and design does not qualify merely by size or team count. Risk alone is insufficient when the relevant decisions and evidence are already settled.
 
-Route elsewhere when the task is primarily:
-- A defect in shipped behavior — diagnose and fix, no discovery chain
-- One bounded capability whose shape is already settled — a single guided build
-- Spec and acceptance criteria only, no code
-- Decomposition and sequencing only, no execution
-- Design exploration without implementation
-- Executing a pre-authored multi-package plan across several deliverables
-- A behavior-preserving rewrite or port, where the oracle is the old behavior
-- Improving one already-correct slow layer against a number
+Route a known defect or behavior-preserving change to diagnosis/coding; settled work to a bounded build; spec, planning, design, research, quality or operation-only requests to their respective owner. Consume valid upstream work instead of repeating planning, research or review. A packet or the word "feature" does not select this chain. An underspecified request needs a bounded clarification, not invented stakes or demand.
 
-**Feature Lifecycle is opt-in, never a default.** It is for the case where an upstream gap — a missed user need, a weak spec, a hidden architecture risk, UX friction — is materially costly to discover after implementation. When that is not true, a lighter chain is the correct chain.
+**Feature Lifecycle is opt-in, never a default owner.** Bare invocation allows a bounded proposal under § Modes, not automatic admission of whatever goal the agent discovers.
 
 ## Core Contract
 
@@ -73,7 +60,7 @@ Route elsewhere when the task is primarily:
 - **Three engine roles, probed once.** `build` (Codex CLI), `judge` (Claude Code), and `breadth` (agy) are bound at launch and recorded before the first spawn. A role is a property of the work; a missing engine rebinds the role and is reported, never worked around.
 - **Bounded everywhere.** Implementation loop `≤ 6` cycles; acceptance-gap re-entry `≤ 2`; run-level budget ceiling is a hard stop that checkpoints, not a warning.
 - **Consume upstream packets; never re-derive them.** A `spec` or `clone` packet collapses re-derivation, never verification → `reference/input-contracts.md`.
-- **One human checkpoint in autonomous mode** — the Phase 0 boundary confirm. Downstream, only an internal gate, a circuit breaker, or the budget ceiling stops the run.
+- **Explicit launch authority, not silence.** Reuse a grant covering this goal, scope and budget; otherwise stop at the existing boundary confirm (§ Modes). Downstream Ask First boundaries remain.
 - **Every document is written to the Document Contract** (`reference/contracts.md` §9): ambiguity driven to zero first, then redundancy cut to nothing — one fact one home, no narration, no padding — with the scope bound, a number's source, a claim's status label and a rejected option's reason never compressed away.
 - Output language follows the CLI global config; identifiers, protocol markers, and schema keys stay English.
 
@@ -90,14 +77,14 @@ Overlap with neighbouring roles → § Overlap Boundaries below. Operating rules
 - Open the run record before the first spawn, and seal each phase's document in the same step that records its gate verdict — outcome, findings, rejected options, and the gate's measured terms (`reference/run-record.md`). A gate verdict recorded against an unsealed document is not recorded.
 - Persist every phase-boundary artifact as a resumable checkpoint (`reference/delivery-report.md` § Cross-Phase Checkpoint-Resume; on-disk shape → `reference/run-record.md`).
 - Author a **measurement contract** in Phase 4 for the demand the feature was derived from, and carry it to Ship as a `hypothesis-open` residual. The chain never marks it closed — it cannot read the outcome.
-- Rehearse the rollback at Ship. A plan that was never run is `E0`; `declared-impossible(reason)` is a legitimate outcome and a different one from never attempted.
+- Rehearse the rollback at Ship. `declared-impossible(reason)` is honest, not a pass: require verified controls and explicit residual-risk acceptance (`reference/phase-contracts.md`).
 - Declare the budget envelope at launch and track cumulative spend against it.
 - Emit the Delivery Report on **every** exit, including aborts — best-so-far per phase, the residual gap, and the resume point.
 - Check/log to `.agents/PROJECT.md`.
 
 ### Ask First
 
-- **Confirm before launch** — the Phase 0 boundary confirm in autonomous mode, and any run whose estimated envelope exceeds the user's stated ceiling.
+- **Confirm before launch** when no explicit grant covers the goal or delegated goal choice, scope and budget, or the envelope exceeds the grant. This applies to supplied goals too (§ Modes).
 - **Engine unavailable at the Phase 5 → 6 handoff** — present the degradation choice with its restated cost model; never pick a runner on the user's behalf.
 - Any out-of-boundary change the negative pass surfaces that the user may want to ratify rather than revert.
 - L4 security triggers, destructive data actions, and external system changes inside the loop.
@@ -115,36 +102,38 @@ Overlap with neighbouring roles → § Overlap Boundaries below. Operating rules
 
 ## Modes
 
-**Default mode:** `AUTORUN_FULL`. In the AUTORUN modes, act without asking except where an **Ask First** gate or the boundary confirm requires it.
+**Default preference:** `AUTORUN_FULL`, not authority. Bind an invocation-scoped grant to goal (or expressly delegated selection within product constraints), scope, actions and budget; record its source in `RUN.md`. Mode, invocation and silence do not delegate product priority. Reuse a sufficient grant without asking again.
 
-| Mode | Behavior at the Phase 0 boundary confirm |
+Without that grant, allow only a bounded read-only proposal: no lifecycle spawns, external actions or implementation. Present goal and envelope, then stop without an answer. Missing signals or budget are not permission. No timed objection window is assumed of chat or headless runtimes.
+
+| Mode | Behavior at the existing launch boundary |
 |------|------------------------------------------|
-| `INTERACTIVE` | Always confirm; the user may edit the goal before proceeding |
-| `GUIDED` | Always confirm; the user approves or aborts |
-| `AUTORUN` | Confirm with an explicit Y/N; **defaults to abort** on no response |
-| `AUTORUN_FULL` | Show the goal with rationale, wait 60s for objection, then proceed. Any input inside the window aborts and re-runs Phase 0 with the objection as a hint |
+| `INTERACTIVE` | Confirm or edit the goal and envelope |
+| `GUIDED` | Confirm or abort |
+| `AUTORUN` | Explicit approval; no answer → checkpoint and stop |
+| `AUTORUN_FULL` | Proceed within an explicit sufficient grant; otherwise request it once and stop without an answer |
 
-The boundary confirm is the **Confirm-before-launch** tier: a launch gate on an expensive chain, not a deliverable checkpoint. Once approved, no further confirmation is required unless the Risk Gate, the loop circuit breaker, the engine-availability check, or the budget ceiling fires.
+This authorizes launch, not a new approval per phase. Existing Ask First, risk, engine, circuit-breaker and budget boundaries remain. High-cost, outward-facing, destructive or cross-team actions outside the grant still need specific authority.
 
 ## Recipes
 
 | Recipe | Subcommand | Default? | When to Use | Read First |
 |--------|-----------|---------|-------------|------------|
-| Goal-supplied run | `run` | ✓ | A feature description is supplied; start at Phase 1 | `reference/phase-contracts.md` |
-| Autonomous run | `bootstrap` | | No goal supplied; discover the highest-value goal first | `reference/phase-contracts.md` § Phase 0 |
+| Goal-supplied run | `run` | ✓ | Admitted and authorized supplied goal → Phase 1 | `reference/phase-contracts.md` |
+| Autonomous run | `bootstrap` | | No goal supplied; propose within explicit authority | `reference/phase-contracts.md` § Phase 0 |
 | Resume | `resume` | | A prior run aborted at a phase boundary and its checkpoint exists | `reference/delivery-report.md` § Cross-Phase Checkpoint-Resume |
 
 ## Subcommand Dispatch
 
 Parse the first token of user input.
 - Matches a Recipe Subcommand above → activate that Recipe; load only its "Read First" file at the initial step.
-- **`auto`, `goal=auto`, or a bare `feature-lifecycle` with no goal** → `bootstrap`; run Phase 0. This is the documented no-args behavior, not a missing argument.
+- **`auto`, `goal=auto`, or a bare `feature-lifecycle` with no goal** → `bootstrap`, within § Modes authority; otherwise only a read-only proposal.
 - **A bare invocation with a resumable checkpoint present** (a `RUN.md` under `.agents/feature-lifecycle/runs/` whose status is not `shipped` → `reference/run-record.md`) → name the checkpoint and ask which: `resume` it, or start a fresh `bootstrap`. Never pick one silently — resuming the wrong run and re-deriving a finished one cost the same as each other's mistake.
 - Otherwise → default Recipe (`run`) with the input as the goal description.
 
 Behavior notes per Recipe:
-- `run`: Phase 1 → 6 → Ship with the supplied goal bound as Phase 1 input. Optional args: `scope=Lite|Standard|Full`, `ui=`, `api_change=`, `db_change=`, `budget=`.
-- `bootstrap`: Phase 0 (scan → propose → prioritize → select → confirm) emits `auto_selected_goal`, then the `run` chain verbatim. `auto` and `goal=auto` are accepted aliases.
+- `run`: Apply admission and authorization, then Phase 1 → 6 → Ship with the supplied goal bound as Phase 1 input. Optional args: `scope=Lite|Standard|Full`, `ui=`, `api_change=`, `db_change=`, `budget=`.
+- `bootstrap`: Within § Modes authority, Phase 0 proposes and selects `auto_selected_goal`; the `run` chain starts only after admission and launch authorization. `auto` and `goal=auto` are accepted aliases.
 - `resume`: read the last good phase checkpoint, re-bind its artifact, and continue from the next phase. Never restarts from Phase 1.
 
 ## Workflow
@@ -153,15 +142,15 @@ Behavior notes per Recipe:
 
 | Phase | Focus | Exit gate |
 |-------|-------|-----------|
-| `P0_BOOTSTRAP` | Scan project + real signals, propose 3-5 goals, score, select one, confirm | A single `auto_selected_goal` with evidence refs and rejected alternatives, boundary-confirmed |
-| `P1_DISCOVER` | Synthetic demands across personas + evidence anchor + friction baseline + reuse scan | Top-3 demands each carry a persona rationale and an evidence anchor |
+| `P0_BOOTSTRAP` | Bounded scan, evidence-bounded candidates, explicit launch authority | One authorized `auto_selected_goal`; missing scoring inputs remain unknown |
+| `P1_DISCOVER` | Needs with provenance; optional synthetic scenarios; baseline and reuse | Decision-driving claims have source, support scope and status; unsupported demand remains hypothesis |
 | `P2_IDEATE` | Diamond thinking (expand → propose → evaluate → subtract) | ≥2 comparable decision candidates |
 | `P3_VERDICT` | Tri-engine deliberation → chosen option + AC seed | Verdict carries option, AC seed, scope boundary, failure conditions; a split escalates |
-| `P4_SPEC` | L0 vision → L1 requirements → L2 detail → L3 acceptance criteria + traceability + the measurement contract | Traceability ≥ scope threshold; L3 ACs measurable and loop-consumable |
+| `P4_SPEC` | Authorized intent → L3 ACs + traceability + measurement | All required and decision-critical obligations traced; measurable ACs; optional gaps explicit |
 | `P5_DESIGN+GATE` | Tech track ‖ UX track, reconverging at the four-axis Risk Gate | `blast_radius.verdict ∈ {Go, Conditional-Go} ∧ failure_modes.high_rpn_count == 0 ∧ friction.gate_pass ∧ security.unmitigated_high == 0` |
 | `P6_LOOP` | Bounded implementation loop under the selected driver and engine | Convergence, cap-reached, or circuit breaker — never an unbounded run |
-| `VERIFY` | Independent conformance pass + negative scope pass + a conditional integration-evidence pass | `conformance ≥ threshold ∧ unmet_must_haves == 0 ∧ non_goal_violations == 0`, with `integration_evidence` recorded |
-| `SHIP` | Commit policy + PR, release plan + CHANGELOG + rollback, then rehearsing the rollback | Delivery Report emitted, and `rollback_verified ∈ {true, declared-impossible(reason)}` |
+| `VERIFY` | Independent conformance pass + negative scope pass + a conditional integration-evidence pass | `unmet_required == 0 ∧ non_goal_violations == 0 ∧ required_evidence_met`, with `integration_evidence` recorded |
+| `SHIP` | Release/PR preparation and rollback rehearsal | Required recovery evidence met; impossible rollback needs verified controls and explicit residual-risk acceptance; report emitted |
 
 Rosters, conditional rows and the chain template are `reference/phase-contracts.md`; P6 and VERIFY are `reference/loop-engine.md`; SHIP is `reference/delivery-report.md`. This skill never restates a roster in two places, and every exit gate above is also the seal point for that phase's document in the run record (`reference/run-record.md`).
 
@@ -203,16 +192,16 @@ Two tiers keep every hub at ≤11 with a real merge surface each. The chain adds
 
 | Gate | Fires at | Passing condition | On failure |
 |------|----------|-------------------|------------|
-| **Boundary confirm** | Phase 0 exit (autonomous only) | Per the Modes table | Abort; re-run Phase 0 with the objection as a hint |
+| **Boundary confirm** | Before launch; P0 exit for discovery | Explicit grant per § Modes | Proposal/checkpoint and stop; an objection returns to the goal owner |
 | **Verdict gate** | Phase 3 exit | A non-split verdict with an AC seed and a scope boundary | 1-1-1 split → human verdict, then re-enter Phase 3 |
-| **Traceability gate** | Phase 4 exit | Full ≥95% / Standard ≥85% / Lite ≥70% | Re-run the spec with a scope downgrade or refined inputs |
-| **Risk Gate** | Phase 5 exit | `blast_radius.verdict ∈ {Go, Conditional-Go} ∧ failure_modes.high_rpn_count == 0 ∧ friction.gate_pass ∧ security.unmitigated_high == 0` | No-Go → the originating phase (4, or the failing Phase 5 track) |
-| **Demand↔reaction closure** | Phase 5, inside the Risk Gate | The walkthrough reaction does not diverge fatally from the predicted demand | Return to Phase 4 for re-spec — even when every axis nominally passes |
+| **Traceability gate** | Phase 4 exit | All required and decision-critical obligations traced; optional gaps explicit | P4 or upstream intent owner; no unilateral scope downgrade |
+| **Risk Gate** | Phase 5 exit | `blast_radius.verdict ∈ {Go, Conditional-Go} ∧ failure_modes.high_rpn_count == 0 ∧ friction.gate_pass ∧ security.unmitigated_high == 0` | No-Go → first wrong decision: P1 need, P4 spec, P5 design |
+| **Demand↔reaction check** | Phase 5, inside the Risk Gate | Reaction source and uncertainty stated; synthetic agreement is not validation | Demand → P1; spec → P4; design → P5; changed goal → launch authority |
 | **Engine roster** | Before the first spawn | All three CLIs probed and every role bound, with any rebinding recorded | Fold by fallback order and record the degradation; never proceed on an unrecorded roster |
 | **Engine availability** | Phase 5 → 6 handoff | `build` answers a spawn, `judge` reachable **and a different CLI from `build`** where a second CLI exists, `agents.max_depth ≥ 2`, subagent tools permitted | Degradation protocol — a confirmed choice, never a silent fallback. One reachable CLI records `context-only` and proceeds; it never blocks the run |
 | **Loop precondition** | Before Phase 6 | The five points of `reference/contracts.md` §2 | Do not enter the loop; report which point failed |
-| **Acceptance verification** | Phase 6 → Ship | `conformance ≥ threshold ∧ unmet_must_haves == 0 ∧ non_goal_violations == 0` | Re-enter Phase 6 with the gap list, ≤2 times, then escalate |
-| **Ship gate** | Ship exit | `rollback_verified ∈ {true, declared-impossible(reason)}`, and the Delivery Report emitted | Do not open the PR; rehearse, or record the reason the rehearsal is impossible |
+| **Acceptance verification** | Phase 6 → Ship | `unmet_required == 0 ∧ non_goal_violations == 0 ∧ required_evidence_met` | First wrong decision → P1/P2/P3/P4/P5; code → P6. ≤2 acceptance re-entries total, then escalate |
+| **Ship gate** | Ship exit | Required recovery evidence; impossible rollback → verified controls + explicit risk acceptance; report | Block readiness on missing evidence/authority; an impossible reason alone never passes |
 | **Budget ceiling** | Continuously | Cumulative spend < ceiling | Hard stop with a resumable checkpoint; warn at 80% |
 
 ## Termination Bounds and Cost
@@ -226,9 +215,9 @@ Cost runs 11-13 agents (Lite) / 17-22 (Standard) / 23-30 (Full), plus 4-8 for Ph
 - **A loop that converges is not a loop that is correct.** It can stop on an implementation that passes its own tests and misses the spec entirely. Gate Ship on the independent acceptance verification, never on the loop's exit reason.
 - **Conformance alone is a one-sided test.** An implementation can satisfy every AC *and* have grown a surface, dependency or table nobody specified — from inside a loop, "add a little more" always looks like progress. The negative pass is what makes the scope boundary load-bearing.
 - **An upstream packet collapses derivation, not verification.** Arriving from `spec` makes Phases 1-4 validation; it does not lighten the Risk Gate or the verification. The two common wastes are re-running discovery over a settled spec, and reading the packet as a gate exemption.
-- **Three seats on one model is not a tri-engine verdict.** Phase 3's cost is justified by three engines actually disagreeing; one model arguing with itself converges on its own priors and returns a confident split that means nothing. Fewer than three reachable → the simulated voices are listed as such.
+- **Engine diversity is not evidence diversity.** Distinguish model, context, evidence and oracle independence; shared premises remain shared even with three votes. Name what each check independently tested. Fewer engines → report simulated voices, never invent independence.
 - **Every gate points forward.** Four risk axes and a two-sided verification stand between the run and a merge; until the rollback is rehearsed, nothing stands between it and a bad merge it cannot undo.
-- **Conformance is not validity.** The verification proves the spec was built; it is silent on whether the demand behind it existed. A run can pass every gate and be wrong in the only sense Phase 0 cared about — which is why the measurement contract leaves the run open.
+- **Conformance is not product value.** Verification checks intent, spec and implementation, not population demand or eventual outcomes. The measurement contract remains open.
 - **A silent runner swap invalidates the run's cost figures.** Ceilings and envelopes are scored against one named engine. Surface the choice with a restated model and record the runner — a fallback nobody was told about produces numbers read against the wrong model.
 - **Hard-failing the Phase 5 → 6 handoff throws away five completed phases.** The abort option is a *checkpointed* resume at Phase 6, not a restart.
 - **A clone's declared parity ceiling is a constraint, not a defect.** A loop given a parity harness will happily "fix" a ceiling-bound behavior and move the product off its baseline. Ceilings are inputs to the loop contract.
@@ -260,7 +249,7 @@ The chain receives a goal, or an upstream handoff packet. It sends a UX brief to
 | Faithful reproduction → Feature Lifecycle | `CLONE_HANDOFF_PACKET` | Stack decision record, parity ceilings, parity harness, coverage gaps |
 | Feature Lifecycle → UX track | `FEATURE_LIFECYCLE_TO_UX` | Creative direction brief + the UX slice of the spec |
 | Feature Lifecycle → Loop driver | `FEATURE_LIFECYCLE_TO_LOOP` | Loop contract: L3 ACs + mitigations + friction signals + the declared cap |
-| Feature Lifecycle → Acceptance verification | `FEATURE_LIFECYCLE_TO_VERIFY` | The AC set and the scope boundary to verify against |
+| Feature Lifecycle → Acceptance verification | `FEATURE_LIFECYCLE_TO_VERIFY` | Authorized intent + changes, ACs, scope, oracle sources and required evidence |
 | Feature Lifecycle → Performance tuning | `FEATURE_LIFECYCLE_TO_PERF` | A perf AC left unmet inside the envelope, with its target and budget |
 | Feature Lifecycle → User | `FEATURE_LIFECYCLE_COMPLETE` | Delivery Report + ship status |
 
@@ -304,7 +293,7 @@ Emit `WORK_GATE` (`reference/contracts.md` §6) alongside the Delivery Report.
 
 ## AUTORUN Support
 
-When Feature Lifecycle receives `_AGENT_CONTEXT`, parse `task_type`, `description`, and `Constraints`, run the standard chain (skip verbose explanations, focus on deliverables), and return `_STEP_COMPLETE`.
+When Feature Lifecycle receives `_AGENT_CONTEXT`, parse `task_type`, `description`, and `Constraints`, apply admission and explicit authorization (routing metadata is not consent), then run the admitted chain (skip verbose explanations, focus on deliverables), and return `_STEP_COMPLETE`.
 
 ### `_STEP_COMPLETE`
 
@@ -322,7 +311,8 @@ _STEP_COMPLETE:
       engine_roster: "build/judge/breadth CLIs, engine_independence: model | context-only"
       risk_gate: "Go | Conditional-Go | No-Go (four axes)"
       rollback_verified: "true | declared-impossible(reason)"
-      conformance: "[percent] / unmet_must_haves: [n] / non_goal_violations: [n]"
+      conformance: "[summary percent] / unmet_required: [n] / non_goal_violations: [n]"
+      required_evidence: "met | blocked(gaps)"
       budget: "[spent] of [ceiling]"
   Validations:
     completeness: "complete | partial | blocked"

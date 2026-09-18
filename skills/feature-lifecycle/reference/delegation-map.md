@@ -28,11 +28,11 @@ Names are those of the `agent-skills` ecosystem this skill was extracted from. T
 | 0 | `metric-signal` | `pulse` | Read the configured analytics export; skip and flag if none |
 | 0 | `competitor-gap` | `compete` | Skip unless a competitor list is maintained in-repo |
 | 0 | `session-replay` | `trace` | Skip unless a replay export is available |
-| 0 | `goal-proposal` | `spark` | Synthesise 3-5 candidates from the scan directly |
-| 0 | `goal-scoring` | `rank` | Score with ICE/RICE/WSJF inline |
+| 0 | `goal-proposal` | `spark` | Propose plausible distinct candidates from the scan without filling a quota |
+| 0 | `goal-scoring` | `rank` | Compare sourced inputs with a suitable framework; leave unknown inputs unscored |
 | 0 | `advisory-check` | `magi[advisor]` | One adversarial pass over the top candidate |
-| 1 | `demand-modeling` | `echo[demand]` | Author 3+ personas and their demands directly |
-| 1 | `evidence-validation` | `field` | Anchor each demand to a citable observation, or mark it `unevidenced` |
+| 1 | `demand-modeling` | `echo[demand]` | Generate optional relevant scenarios, explicitly hypothetical; no persona quota |
+| 1 | `evidence-validation` | `field` | State each need's provenance and claim-specific support; deduplicate observations and keep unsupported claims hypothetical |
 | 1 | `friction-baseline` | `echo` | Walk the current flow and record where it costs the user |
 | 1 | `reuse-scan` | `lens` | Grep and read the repo for an existing implementation of the same capability |
 | 2 | `option-generation` | `flux` | Expand → propose → evaluate → subtract, bounded to 4 turns |
@@ -40,7 +40,7 @@ Names are those of the `agent-skills` ecosystem this skill was extracted from. T
 | 4 | `spec-authoring` | `scribe[unified]` | Author L0→L3 and the traceability matrix directly |
 | 4 | `scope-cutting` | `void` | One YAGNI pass over the spec |
 | 4 | `formal-spec` | `scribe` | Emit the formal document in the requested shape |
-| 4 | `measurement-contract` | — (no candidate claimed) | State the metric, predicted direction and size, observation window, and where the number is read — or state precisely why the demand is unmeasurable |
+| 4 | `measurement-contract` | — (no candidate claimed) | State the quantitative or qualitative observation, reader and window; unsupported size stays unmeasured, or state why the demand is unmeasurable |
 | 5 | `architecture-decision` | `atlas` | Author the ADR and the dependency graph |
 | 5 | `api-design` | `gateway` | Author the API surface and its OpenAPI document |
 | 5 | `schema-design` | `schema` | Author the schema delta and the migration plan |

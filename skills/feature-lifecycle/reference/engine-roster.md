@@ -87,8 +87,8 @@ Concurrency: cross-engine spawns run as background processes and are joined by t
 
 ## Hard Rules
 
-1. **`acceptance-verification.engine != build.engine` wherever a second engine is reachable.** The acceptance verification never runs on the engine that built. Independence at this gate is *model* independence, not merely context independence — a fresh context on the same model reproduces the same blind spot, and the negative pass exists precisely to catch what the builder could not see. When only one engine is reachable, the verification still runs, and the Delivery Report records `engine_independence: context-only` rather than claiming a guarantee the run did not have.
-2. **Phase 3's `deliberation` runs one voice per distinct engine** when three are reachable: `logic` on `judge`, `human-impact` on `breadth`, `precedent` on `build`. Three voices from one model is one model's disagreement with itself; the verdict is only worth its cost when the engines are actually three.
+1. **`acceptance-verification.engine != build.engine` wherever a second engine is reachable.** The acceptance verification never runs on the engine that built. This separates engine assignments; record the actual model/version and context separation, and assess evidence/oracle provenance independently (`reference/contracts.md` §3). Different CLIs may use the same model; different models may share the same wrong premise. When only one engine is reachable, the verification still runs, and the Delivery Report records `engine_independence: context-only` rather than claiming a guarantee the run did not have.
+2. **Phase 3's `deliberation` runs one voice per distinct engine** when three are reachable: `logic` on `judge`, `human-impact` on `breadth`, `precedent` on `build`. Each voice states what it independently checked; three engine names do not multiply a shared observation or establish independent reasoning.
 3. **No silent rebinding.** A role bound to something other than its default is recorded at bind time and named in the Delivery Report. The cost and convergence model is scored against a named roster.
 4. **The hub never delegates orchestration.** Gates, checkpoints, the budget ledger, and the Delivery Report stay on the hub whatever the roster resolves to.
 5. **Degradation changes who runs a gate, never whether it passes.** No threshold moves because an engine was missing.
@@ -143,7 +143,8 @@ engine_roster:
     judge: claude-code
     breadth: agy
   rebindings: []              # [(role, from, to, reason)] — empty on the full roster
-  engine_independence: model | context-only
+  engine_independence: model | context-only  # actual model identity, not CLI count
+  verification_provenance: <model/version; context isolation; evidence sources; oracle sources and shared premises>
   simulated_voices: []        # Phase 3 voices with no distinct engine behind them
   spend: { claude-code: <n>, codex: <n>, agy: <n> }
 ```
