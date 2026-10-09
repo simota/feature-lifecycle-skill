@@ -110,7 +110,7 @@ Concurrency: cross-engine spawns run as background processes and are joined by t
 | P5 · Gate | `blast-radius-analysis` | `breadth` | Blast radius is a whole-repo read |
 | P5 · Gate | `friction-walkthrough` | `breadth` | Cognitive walkthrough and WCAG simulation |
 | P5 · Gate | `security-review` | `judge` | Attack surface, authz, data class, and regulatory exposure — adversarial reading of what the change now exposes |
-| P6 | — → `reference/loop-engine.md` § In-Loop Roster | mixed | That file owns the per-row assignment because it also owns the spawn sequence the roles appear in; splitting them would put the same rows in two files |
+| P6 | — → `reference/loop-engine.md` § In-Loop Roster and Spawn Sequence | mixed | That file owns the per-row assignment because it also owns the spawn sequence the roles appear in; splitting them would put the same rows in two files |
 | VERIFY | `acceptance-verification` — conformance, negative pass, and the conditional integration-evidence pass | `judge` | Hard rule 1 |
 | SHIP | `commit-and-pr`, `release-plan`, `rollback-rehearsal` | hub | Commits, PR, release plan, and proving the reverse path are the hub's to own |
 

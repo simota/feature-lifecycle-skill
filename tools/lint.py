@@ -11,18 +11,24 @@ checked mechanically rather than remembered.
 
   F1  frontmatter `name` is kebab-case, <=64 chars, no reserved prefix
   F2  frontmatter `description` is non-empty, <=1024 chars, carries a WHEN phrase,
-      and contains no XML tags or non-Latin script (accented Latin prose passes)
+      and contains no XML tags or non-Latin script — no letter outside the Latin
+      script and nothing from CJK onward (accented Latin prose and typographic
+      punctuation pass)
   F3  no frontmatter keys outside the allowlist
   N1  skill folder name == frontmatter `name`
   C1  the entry file is exactly `SKILL.md`
   C2  no README.md inside the skill folder (it belongs at the repo root)
   H1  CAPABILITIES_SUMMARY block present, with the COLLABORATION_PATTERNS,
-      BIDIRECTIONAL_PARTNERS and PROJECT_AFFINITY markers inside it
-  ST1 required section headings present
+      BIDIRECTIONAL_PARTNERS and PROJECT_AFFINITY markers inside that same
+      `<!-- -->` comment — a marker that drifted out of it is not a marker
+  ST1 required section headings present, outside code fences
   L1  no `_common/<path>` reference anywhere, at any depth, extension or not —
       the standalone invariant
   L2  every `reference/<file>.md` cited by any file in the skill resolves on disk
   L3  every file under `reference/` is cited by at least one *other* file
+  L4  every `§ <section>` citation — `reference/x.md` § Heading, `SKILL.md` § Heading,
+      a bare § Heading in its own file, or a numbered `§N` — names a heading that
+      exists in the file it points at, outside code fences
   S1  SKILL.md body size (line count and token estimate) within the advisory tiers
 
 Severity:
@@ -41,6 +47,7 @@ from __future__ import annotations
 
 import argparse
 import re
+import unicodedata
 import shutil
 import subprocess
 import sys
@@ -85,6 +92,12 @@ CAPABILITY_MARKERS = (
 # the slash. A `.` closing a sentence is left outside the match.
 COMMON_PATH_RE = re.compile(r"_common/[A-Za-z0-9_./-]*[A-Za-z0-9_/-]")
 REFERENCE_PATH_RE = re.compile(r"reference/[A-Za-z0-9_.-]+\.md")
+
+# A section citation: an optional backticked target file, then `§`, then either a
+# section number (`§3`) or the heading's words running on into the prose. Where the
+# heading text ends is unknowable from the citation alone, so the check runs the other
+# way round: some heading in the target must be a prefix of what follows the `§`.
+SECTION_CITE_RE = re.compile(r"(?:`((?:reference/)?[A-Za-z0-9_.-]+\.md)`\s*)?§\s*(\d+|[^\n]+)")
 
 LINE_TIERS = ((1000, "P1"), (700, "P2"), (500, "P3"))
 TOKEN_TIERS = ((15000, "P1"), (10000, "P2"), (7000, "P3"))
@@ -148,6 +161,57 @@ def parse_frontmatter(text: str) -> tuple[dict[str, str], str]:
     return {k: _unquote(" ".join(v).strip()) for k, v in parts.items()}, body
 
 
+def headings(text: str) -> list[str]:
+    """Markdown headings outside fenced code blocks. A `### Residual Ledger` inside a
+    fenced template renders as literal text, so nothing can be cited to it."""
+    found: list[str] = []
+    fence = False
+    for line in text.splitlines():
+        if line.lstrip().startswith("```"):
+            fence = not fence
+            continue
+        if not fence:
+            m = re.match(r"^#{1,6}\s+(.+?)\s*#*\s*$", line)
+            if m:
+                found.append(m.group(1))
+    return found
+
+
+def _citation_keys(heading: str) -> set[str]:
+    """The forms a heading is cited by: verbatim, without a trailing parenthetical
+    (`Integration evidence (conditional third pass)`), and up to its colon
+    (`Phase 0: Bootstrap …` is cited as `§ Phase 0`)."""
+    forms = {heading, re.sub(r"\s*\([^)]*\)\s*$", "", heading)}
+    if ":" in heading:
+        forms.add(heading.split(":", 1)[0])
+    return {f.strip().strip("`").lower() for f in forms if f.strip()}
+
+
+def _resolves(cited: str, target_headings: list[str]) -> bool:
+    cited = cited.lower()
+    number = re.match(r"\d+", cited)
+    if number:
+        return any(re.match(rf"{number.group(0)}\.\s", h) for h in target_headings)
+    for heading in target_headings:
+        for key in _citation_keys(heading):
+            if cited.startswith(key) and (len(cited) == len(key) or not cited[len(key)].isalnum()):
+                return True
+    return False
+
+
+def _non_latin(text: str) -> set[str]:
+    """Characters that do not route as Latin-script prose: any letter whose Unicode
+    name is not LATIN (Cyrillic, Greek, Arabic, kana, CJK ideographs …), plus every
+    character from the CJK radicals block onward, letter or not (`。`, `「`)."""
+    bad = set()
+    for c in text:
+        if ord(c) > 0x2E80:
+            bad.add(c)
+        elif unicodedata.category(c).startswith("L") and not unicodedata.name(c, "").startswith("LATIN"):
+            bad.add(c)
+    return bad
+
+
 def lint_skill(skill_dir: Path, out: list[Finding]) -> None:
     name = skill_dir.name
     skill_md = skill_dir / "SKILL.md"
@@ -165,7 +229,8 @@ def lint_skill(skill_dir: Path, out: list[Finding]) -> None:
             out.append(Finding("P2", "C2", rel(skill_dir / stray),
                                "README.md inside the skill folder — put it at the repo root"))
 
-    text = skill_md.read_text(encoding="utf-8")
+    # A CRLF checkout must not read as "no frontmatter" and fail F1 for the wrong reason.
+    text = skill_md.read_text(encoding="utf-8").replace("\r\n", "\n")
     fm, body = parse_frontmatter(text)
 
     # F1
@@ -196,8 +261,8 @@ def lint_skill(skill_dir: Path, out: list[Finding]) -> None:
         if not WHEN_RE.search(desc):
             out.append(Finding("P2", "F2", rel(skill_md),
                                "description states no WHEN — a trigger phrase is what routes to it"))
-        # Latin script — accents included — routes fine; CJK and beyond do not.
-        non_latin = {c for c in desc if ord(c) > 0x2E80}
+        # Latin script — accents included — routes fine; other scripts do not.
+        non_latin = _non_latin(desc)
         if non_latin:
             out.append(Finding("P1", "F2", rel(skill_md),
                                f"description contains non-Latin characters: {''.join(sorted(non_latin))}"))
@@ -206,15 +271,18 @@ def lint_skill(skill_dir: Path, out: list[Finding]) -> None:
     for key in sorted(set(fm) - FRONTMATTER_KEYS):
         out.append(Finding("P1", "F3", rel(skill_md), f"frontmatter key `{key}` is not allowed"))
 
-    # H1
+    # H1 — the markers are read out of the comment that opens with CAPABILITIES_SUMMARY,
+    # so one that slipped below the `-->` (and now renders as prose) is missing.
+    summary = next((c for c in re.findall(r"<!--(.*?)-->", body, re.S) if CAPABILITY_MARKERS[0] in c), "")
     for marker in CAPABILITY_MARKERS:
-        if marker not in body:
-            out.append(Finding("P2", "H1", rel(skill_md), f"missing `{marker}` marker"))
+        if marker not in summary:
+            where = "missing" if marker not in body else "outside the CAPABILITIES_SUMMARY comment —"
+            out.append(Finding("P2", "H1", rel(skill_md), f"{where} `{marker}` marker"))
 
     # ST1
-    headings = {m.group(1).strip() for m in re.finditer(r"^#{2,3}\s+(.+)$", body, re.M)}
+    present = {h.strip() for h in headings(body)}
     for required in REQUIRED_HEADINGS:
-        if not any(required.lower() in h.lower() for h in headings):
+        if not any(required.lower() in h.lower() for h in present):
             out.append(Finding("P2", "ST1", rel(skill_md), f"missing required section `## {required}`"))
 
     # S1
@@ -233,14 +301,37 @@ def lint_skill(skill_dir: Path, out: list[Finding]) -> None:
 
 
 def lint_links(skill_dir: Path, out: list[Finding]) -> None:
-    """L1-L3: the standalone invariant, and reference/ resolving in both directions."""
+    """L1-L4: the standalone invariant, reference/ resolving in both directions, and
+    every § citation landing on a heading that exists."""
     rel = lambda p: str(p.relative_to(REPO_ROOT))  # noqa: E731
     files = sorted(p for p in skill_dir.rglob("*.md") if p.is_file())
     cited: set[str] = set()
+    heading_cache: dict[Path, list[str]] = {}
 
     for path in files:
         own = path.relative_to(skill_dir).as_posix()
         for lineno, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
+            # L4 — a bare numbered `§N` after a cited file inherits that file:
+            # "`reference/contracts.md` §1: the gate (§2), the ladder (§3)" cites
+            # contracts.md three times, not SKILL.md twice. A bare `§ Heading` is
+            # always the citing file's own.
+            last_cited = path
+            for match in SECTION_CITE_RE.finditer(line):
+                if match.group(1):
+                    context = last_cited = skill_dir / match.group(1)
+                elif match.group(2)[:1].isdigit():
+                    context = last_cited
+                else:
+                    context = path
+                if not context.is_file():
+                    continue  # a dead file path is L2's finding, not this one's
+                if context not in heading_cache:
+                    heading_cache[context] = headings(context.read_text(encoding="utf-8"))
+                if not _resolves(match.group(2), heading_cache[context]):
+                    shown = "§ " + match.group(2)
+                    shown = shown if len(shown) <= 50 else shown[:47] + "..."
+                    out.append(Finding("P2", "L4", f"{rel(path)}:{lineno}",
+                                       f"\"{shown}\" names no heading in {context.relative_to(skill_dir).as_posix()}"))
             # L1
             for match in COMMON_PATH_RE.findall(line):
                 out.append(Finding("P1", "L1", f"{rel(path)}:{lineno}",
@@ -361,16 +452,29 @@ MUTATIONS = [
      _set_description('"Runs one high-stakes feature end to end and ships it."')),
     ("F2", "rejects non-Latin script in the description",
      _set_description('"Use when the feature is \u9ad8\u30ea\u30b9\u30af and expensive to reverse."')),
+    ("F2", "rejects a non-Latin script below the CJK range",
+     _set_description('"Use when the feature is \u0432\u044b\u0441\u043e\u043a\u0438\u0439 risk and expensive to reverse."')),
     ("F3", "rejects an unknown frontmatter key",
      _edit("SKILL.md", lambda s: s.replace("name: feature-lifecycle", "name: feature-lifecycle\nversion: 2", 1))),
     ("H1", "catches a dropped marker",
      _edit("SKILL.md", lambda s: s.replace("PROJECT_AFFINITY:", "AFFINITY:", 1))),
+    ("H1", "catches a marker moved outside the summary comment",
+     _edit("SKILL.md", lambda s: re.sub(r"\n(PROJECT_AFFINITY:[^\n]*)\n-->", r"\n-->\n\1", s, count=1))),
     ("ST1", "catches a dropped section",
      _edit("SKILL.md", lambda s: s.replace("\n## Core Contract\n", "\n## Contract\n", 1))),
+    ("ST1", "ignores a required heading that only survives inside a code fence",
+     _edit("SKILL.md", lambda s: s.replace("\n## Core Contract\n", "\n```\n## Core Contract\n```\n", 1))),
     ("L1", "catches a reintroduced _common path",
      _edit("SKILL.md", lambda s: s.replace("\n## Workflow\n", "\nSee `_common/OPERATIONAL.md`.\n\n## Workflow\n", 1))),
     ("L2", "catches a dead reference link",
      _edit("SKILL.md", lambda s: s.replace("`reference/loop-engine.md`", "`reference/loop-engin.md`", 1))),
+    ("L4", "catches a section citation whose heading was renamed",
+     _edit("reference/loop-engine.md", lambda s: s.replace("\n## Termination Bounds\n", "\n## Loop Bounds\n", 1))),
+    ("L4", "catches a numbered citation past the last section",
+     _edit("SKILL.md", lambda s: s.replace("(`reference/contracts.md` §2)", "(`reference/contracts.md` §12)", 1))),
+    ("L4", "catches a citation to a heading that exists only inside a code fence",
+     _edit("reference/phase-contracts.md", lambda s: s.replace(
+         "§ Output Envelope)", "§ Residual Ledger)", 1))),
     ("L3", "catches an uncited reference file", _add_orphan_reference),
     ("L3", "catches a reference file that cites only itself", _add_self_citing_reference),
     ("C2", "catches a README inside the skill folder", _add_readme),
