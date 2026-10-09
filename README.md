@@ -87,7 +87,8 @@ worse than a missing one. Full contract → `skills/feature-lifecycle/reference/
 `docs/index.html` is a single self-contained page that visualises the chain — the
 phase-by-phase rosters and exit gates, the four-axis Risk Gate, the Phase 6 spawn
 sequence across the three engine lanes, the gate index, and every path that sends
-work back upstream. No build step, no dependencies, one file.
+work back upstream. No build step and no script dependencies — one file; its web fonts load
+from Google Fonts and fall back to system fonts when that request fails.
 
 ```sh
 make pages   # serve docs/ at http://localhost:8000 to preview
