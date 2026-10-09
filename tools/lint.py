@@ -184,11 +184,17 @@ def headings(text: str) -> list[str]:
     """Markdown headings outside fenced code blocks. A `### Residual Ledger` inside a
     fenced template renders as literal text, so nothing can be cited to it."""
     found: list[str] = []
-    fence = False
+    fence = ""  # the opening run of backticks or tildes; a fence closes only on its own kind
     for line in text.splitlines():
-        if line.lstrip().startswith("```"):
-            fence = not fence
-            continue
+        marker = re.match(r"^ {0,3}(`{3,}|~{3,})", line)
+        if marker:
+            run = marker.group(1)
+            if not fence:
+                fence = run
+                continue
+            if run[0] == fence[0] and len(run) >= len(fence) and not line.strip()[len(run):]:
+                fence = ""
+                continue
         if not fence:
             m = re.match(r"^#{1,6}\s+(.+?)\s*#*\s*$", line)
             if m:
@@ -504,6 +510,8 @@ MUTATIONS = [
      _edit("SKILL.md", lambda s: s.replace("\n## Core Contract\n", "\n## Contract\n", 1))),
     ("ST1", "ignores a required heading that only survives inside a code fence",
      _edit("SKILL.md", lambda s: s.replace("\n## Core Contract\n", "\n```\n## Core Contract\n```\n", 1))),
+    ("ST1", "ignores a required heading inside a tilde fence",
+     _edit("SKILL.md", lambda s: s.replace("\n## Core Contract\n", "\n~~~\n## Core Contract\n~~~\n", 1))),
     ("L1", "catches a reintroduced _common path",
      _edit("SKILL.md", lambda s: s.replace("\n## Workflow\n", "\nSee `_common/OPERATIONAL.md`.\n\n## Workflow\n", 1))),
     ("L2", "catches a dead reference link",

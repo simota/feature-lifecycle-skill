@@ -53,11 +53,13 @@ The directory is created, and `RUN.md` written, **before the first spawn** — t
 | Provisional | `YYYY-MM-DD-bootstrap-<n>`, `<n>` counting that day's bootstrap runs from 1 | At launch, before the first spawn. `00-bootstrap.md` opens under it |
 | Final | `YYYY-MM-DD-<goal-slug>` from `auto_selected_goal.title` | At the Phase 0 boundary confirm (0e), on approval — **rename the directory once, before Phase 1 opens** |
 
+Both stages exist only for a `bootstrap` whose discovery the user explicitly granted (`SKILL.md` § Modes) — the 0a spawns are what require the directory. A bare invocation without that grant is a read-only proposal: it spawns nothing, creates no run directory, and stops without writing anything, answered or not.
+
 Rules on the rename:
 
 - It happens **at most once per run**, and only on an approved boundary confirm. Every later phase opens under the final id, so nothing downstream ever sees the provisional one.
 - `RUN.md` records both (`id:` and `id_provisional:`), because the Phase 0 document was written under the old name and a reader tracing it back needs the mapping.
-- A **rejected** boundary confirm keeps the provisional id and sets `Status: declined-at-P0`; an unanswered one sets `aborted-at-P0`, which stays resumable (§ Run Status). The run stops, and its `00-bootstrap.md` is worth keeping — the scored candidates and the objection are exactly what the next `bootstrap` scan should not re-derive.
+- A **rejected** boundary confirm keeps the provisional id and sets `Status: declined-at-P0`; an unanswered one sets `aborted-at-P0`, which stays resumable (§ Run Status) — both within that granted discovery; neither ever applies to an ungranted proposal. The run stops, and its `00-bootstrap.md` is worth keeping — the scored candidates and the objection are exactly what the next `bootstrap` scan should not re-derive.
 - The directory has not been committed at this point — the run record is committed at Ship — so the rename is a filesystem move with no history to rewrite.
 
 Goal-supplied mode has no such stage: the title is the invocation argument, so the final id is known at launch.
