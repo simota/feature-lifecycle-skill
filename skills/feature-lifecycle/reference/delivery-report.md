@@ -85,10 +85,10 @@ The historical profile assumes Phase 0 adds roughly 10-15 minutes; this is an un
 
 ## Run-Level Budget Envelope
 
-The loop's cost-per-task breaker bounds the *loop*. The *whole run* — Phase 0-6 + Ship, up to 30 agents × loop iterations, so 27-61 spawns at the Full autonomous profile — carries a **pre-declared budget envelope**, bound to the explicit launch grant alongside the agent/time/token estimate. An estimate does not authorize its own ceiling or a later increase.
+The loop's cost-per-task breaker bounds the *loop*. The *whole run* — Phase 0-6 + Ship, up to 30 agents plus Phase 0 and the loop iterations, 27-61 spawns at the Full autonomous profile (a modeled, uncalibrated estimate) — carries a **pre-declared budget envelope**, bound to the explicit launch grant alongside the agent/time/token estimate. An estimate does not authorize its own ceiling or a later increase.
 
-- `budget_ceiling` (tokens or agent-spawn count). The chain tracks cumulative spend across all phases and **hard-aborts with a resumable checkpoint** when the ceiling is reached, rather than running open-ended. Default ceiling = the cost-profile estimate × 1.5; the user may override at launch.
-- At **80% of the ceiling**, emit a warning. In `GUIDED`/`INTERACTIVE`, pause for a continue/abort decision; in `AUTORUN_FULL`, log the warning and proceed to the ceiling.
+- `budget_ceiling` (tokens or agent-spawn count). The chain tracks cumulative spend across all phases and **hard-aborts with a resumable checkpoint** when the ceiling is reached, rather than running open-ended. The *proposed* ceiling presented for the grant defaults to the cost-profile estimate × 1.5; it binds only once the user grants it, and the user may set a different one at launch.
+- At **80% of the ceiling**, emit a warning. In `GUIDED`/`INTERACTIVE`, pause for a continue/abort decision; in `AUTORUN`/`AUTORUN_FULL`, log the warning and proceed to the ceiling — spend up to it was already granted.
 - The ceiling is a hard stop, not advisory. It is what protects against a runaway Phase 6 loop or a re-entry storm from the acceptance-verification gate.
 
 ## Cross-Phase Checkpoint-Resume

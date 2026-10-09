@@ -77,6 +77,8 @@ An empty capture from a reachable CLI is a **capture failure** first — one typ
 
 Verified against Claude Code 2.1.x, Codex CLI (`codex exec`), and agy 1.1.x. Every non-hub spawn runs with an absolute working directory and an absolute artifact path.
 
+`'<prompt>'` below marks the argument position, not a quoting recipe. The prompt carries the spec's `non_goals` and ACs verbatim, so it contains quotes, backticks and `$` as a matter of course: pass it as a single argv element from a process API (`subprocess.run([...])`), or through stdin where the CLI reads it (`claude -p` and `codex exec -` do), never by interpolating it into a shell string. A prompt that broke out of its quoting runs as a command on the hub's machine.
+
 | CLI | Headless invocation | Authoritative output | Trap |
 |-----|--------------------|----------------------|------|
 | Claude Code | `claude -p '<prompt>' --output-format json --model <model> --add-dir <abs ws> --permission-mode <mode>` | stdout, parsed as JSON | Bare `-p` prints prose; without `--output-format json` there is nothing to parse deterministically |

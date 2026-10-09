@@ -15,6 +15,7 @@
 - Standalone artifacts
 - Write discipline
 - What `resume` reads
+- Run status
 - Run record vs journal vs activity log vs Delivery Report
 - What never goes in
 - Retention
@@ -23,7 +24,7 @@
 
 ## Why a Record At All
 
-The Delivery Report is a **summary emitted to the caller**. It carries the traceability percentage, the Risk-Gate verdict, and the conformance number — and it carries none of what those numbers were computed from. The persona set that produced the decision-driving needs, the actual candidate goals not selected, the FMEA rows that scored below the RPN threshold, the reuse scan's near-misses, the architecture options the ADR rejected: each is produced by an expensive phase, read once by the next phase, and then gone.
+The Delivery Report is a **summary emitted to the caller**. It carries the traceability percentage, the Risk-Gate verdict, and the conformance number — and it carries none of what those numbers were computed from. The sources and synthetic scenarios behind the decision-driving needs, the actual candidate goals not selected, the FMEA rows that scored below the RPN threshold, the reuse scan's near-misses, the architecture options the ADR rejected: each is produced by an expensive phase, read once by the next phase, and then gone.
 
 That loss is not free in three specific ways:
 
@@ -56,14 +57,14 @@ Rules on the rename:
 
 - It happens **at most once per run**, and only on an approved boundary confirm. Every later phase opens under the final id, so nothing downstream ever sees the provisional one.
 - `RUN.md` records both (`id:` and `id_provisional:`), because the Phase 0 document was written under the old name and a reader tracing it back needs the mapping.
-- A **rejected** boundary confirm keeps the provisional id. The run stops, and its `00-bootstrap.md` is worth keeping — the scored candidates and the objection are exactly what the next `bootstrap` scan should not re-derive.
+- A **rejected** boundary confirm keeps the provisional id and sets `Status: declined-at-P0` (§ Run Status). The run stops, and its `00-bootstrap.md` is worth keeping — the scored candidates and the objection are exactly what the next `bootstrap` scan should not re-derive.
 - The directory has not been committed at this point — the run record is committed at Ship — so the rename is a filesystem move with no history to rewrite.
 
 Goal-supplied mode has no such stage: the title is the invocation argument, so the final id is known at launch.
 
 ## Layout
 
-The file number is the phase number. There is no phase without a document and no document without a phase.
+The file number is the phase number. Every phase that runs has exactly one document, and no document exists for a phase that did not run.
 
 ```
 .agents/feature-lifecycle/runs/2026-08-22-checkout-guest-flow/
@@ -124,7 +125,7 @@ One shape, learned once, applied to all nine.
 The typed artifact the phase emitted, or a link to it under `artifacts/` where it is one. This is the part the next phase consumes and the Delivery Report summarises.
 
 ### `## Findings`
-**What the phase learned that its own artifact does not carry.** The artifact is the decision; the findings are what the decision was made against and then dropped — the evidence that did not make the selected needs, the near-miss the reuse scan surfaced, the persona whose demand contradicted the others, the axis that passed at the edge of its threshold.
+**What the phase learned that its own artifact does not carry.** The artifact is the decision; the findings are what the decision was made against and then dropped — the evidence that did not make the selected needs, the near-miss the reuse scan surfaced, the source whose evidence contradicted the others, the axis that passed at the edge of its threshold.
 
 This is the section the chain exists to produce and the only one nothing else records. An empty `## Findings` on P0, P1 or P5 means either the phase did no work or the work was lost — and on exactly those phases, losing it is the whole cost of the phase.
 
@@ -134,7 +135,7 @@ Every option considered and dropped, each with the reason. Phase 0's `rejected_a
 ### `## Gate`
 The exit criterion **verbatim** from `reference/phase-contracts.md`, the measured value for each of its terms, and the verdict. On `gate: fail`, also: which phase it returned to, and what has to change before re-entry.
 
-Quoting the criterion rather than paraphrasing it is what makes the record auditable. A gate recorded as "traceability OK" cannot be checked against a threshold that was 85%.
+Quoting the criterion rather than paraphrasing it is what makes the record auditable. A gate recorded as "traceability OK" cannot be checked for which required obligation is still untraced.
 
 ## Per-Phase Contents
 
@@ -231,6 +232,22 @@ ceiling: [n]  ·  spent: [n]  ·  per-engine: { claude-code: n, codex: n, agy: n
 An `open` document means that phase did not finish. Resume **re-enters that phase from its start** and appends a `## Re-entry` block; it does not delete the partial document, and it does not treat partial work as a checkpoint.
 
 `RUN.md` is the one document that is rewritten rather than appended to — it is an index of state, not a record of events. Everything it says is derivable from the phase documents, which is what makes rewriting it safe.
+
+## Run Status
+
+`RUN.md`'s `**Status:**` takes exactly one of these values. It is a different field from the Delivery Report's `Status: SUCCESS | PARTIAL | BLOCKED | FAILED`, which grades the outcome; this one says what a later invocation may do with the record.
+
+| Status | Meaning | Resumable |
+|--------|---------|-----------|
+| `running` | A phase document is `open` and the hub has not exited | Yes — found by a later invocation, it means the hub died without writing a stop; treat it as `aborted-at-<phase of the open document>` |
+| `aborted-at-<P>` | Stopped at or inside phase `<P>` by the budget ceiling, the circuit breaker, an unanswered engine choice, or a user interrupt | Yes |
+| `blocked-at-<P>` | Stopped on a typed blocker only the user or an external party can clear — missing authority, missing required evidence, a spec-owner return | Yes, once the blocker named in `Stopped because` is cleared |
+| `declined-at-P0` | The 0e boundary confirm was rejected or went unanswered; the record keeps the provisional id | No — a later `bootstrap` reads its `00-bootstrap.md` as prior evidence instead |
+| `shipped` | The Ship gate passed | No |
+| `superseded` | A later run shipped the same goal; awaiting prune (§ Retention) | No |
+| `closed` | The user ended the run without shipping it | No |
+
+A bare invocation surfaces only a **resumable** record (`SKILL.md` § Subcommand Dispatch). Any other status, or a value not in this table, is never offered as a checkpoint: a record nobody can resume, surfaced on every invocation, trains the user to dismiss the prompt that exists for the one that can be.
 
 ## Run Record vs Journal vs Activity Log vs Delivery Report
 

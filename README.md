@@ -9,7 +9,7 @@ Feature Lifecycle is the heavyweight path. It is for the case where an upstream 
 The skill lives at `skills/feature-lifecycle/`; link that directory into each CLI's skills root.
 
 ```sh
-make link     # symlink into ~/.claude, ~/.codex and ~/.gemini — skips a root that does not exist
+make link     # symlink into ~/.claude, ~/.codex and ~/.gemini/antigravity-cli — skips a root that does not exist
 make status   # show where it is currently linked
 make unlink   # remove only the links pointing at this repo
 ```
@@ -19,7 +19,7 @@ make unlink   # remove only the links pointing at this repo
 ```sh
 ln -s "$PWD/skills/feature-lifecycle" ~/.claude/skills/feature-lifecycle    # Claude Code
 ln -s "$PWD/skills/feature-lifecycle" ~/.codex/skills/feature-lifecycle     # Codex CLI
-ln -s "$PWD/skills/feature-lifecycle" ~/.gemini/skills/feature-lifecycle    # agy
+ln -s "$PWD/skills/feature-lifecycle" ~/.gemini/antigravity-cli/skills/feature-lifecycle    # agy
 ```
 
 Then invoke it:
@@ -71,7 +71,7 @@ measured terms, and the verdict).
 
 The point is the middle two. The Delivery Report quotes a traceability percentage, a
 Risk-Gate verdict and a conformance number, and carries none of what they were computed
-from — the personas that produced no usable demand, the FMEA rows below the threshold,
+from — the evidence that did not support the selected needs, the FMEA rows below the threshold,
 the architecture the ADR rejected, the reuse scan's near-misses. Each is produced by an
 expensive phase, read once, and otherwise gone. A failed gate is the clearest case:
 "No-Go, returned to Phase 4" tells the re-entry nothing, so it re-derives a finding

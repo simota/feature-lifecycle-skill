@@ -193,7 +193,7 @@ Internal pipeline: `ux-direction → design-tokens → [interaction-design ‖ m
 
 **Required evidence:** before implementation, identify the integration and recovery evidence needed for each material failure mode in the existing risk result/loop contract, with a reason. Destructive migrations, payment/auth changes and external contracts need representative integration/recovery evidence where local checks cannot expose the critical failure; a safe sandbox, consumer harness or production-shaped isolated data may supply it. Do not require a new staging environment for low-risk reversible work whose independent local oracle suffices. Availability changes whether evidence can be obtained, not whether it is necessary.
 
-**Exit gate:** `go = blast_radius.verdict ∈ {Go, Conditional-Go} ∧ failure_modes.high_rpn_count == 0 ∧ friction.gate_pass ∧ security.unmitigated_high == 0`. On No-Go, return to the first wrong decision — P1 for a demand defect, P4 for a spec defect, the failing P5 track for a design defect; changed goals reopen launch authority.
+**Exit gate:** `go = blast_radius.verdict ∈ {Go, Conditional-Go} ∧ failure_modes.high_rpn_count == 0 ∧ friction.gate_pass ∧ security.unmitigated_high == 0`. `high_rpn_count` counts failure modes at or above the RPN threshold that still lack the mitigation `failure-mode-analysis` requires — not every high-RPN mode the analysis found. The threshold is declared in `05-design.md` before scoring, so a mode cannot pass by moving it afterwards. On No-Go, return to the first wrong decision — P1 for a demand defect, P4 for a spec defect, the failing P5 track for a design defect; changed goals reopen launch authority.
 
 ---
 
@@ -286,6 +286,8 @@ flowchart TD
     VERIFY -->|Spec gap| P4
     VERIFY -->|Design gap| P5
     VERIFY -->|Demand gap| P1
+    VERIFY -->|Infeasible option| P2
+    VERIFY -->|Unresolved choice| P3
     VERIFY -->|Pass| SHIP[Commit and PR, then release plan]
 ```
 

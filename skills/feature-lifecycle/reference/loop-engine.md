@@ -65,9 +65,9 @@ spawn(build,   frontend-implementation, prompt=<FE contract>)?
   → spawn(build,   instrumentation)?    → join
 ```
 
-`spawn(role, …)` is the native subagent API when that role is the hub, and the headless invocation of `reference/engine-roster.md` when it is not. `join` is `wait_agent` on the native path and a process wait plus an artifact read on the headless one.
+`spawn(role, …)` is the native subagent API when that role is the hub, and the headless invocation of `reference/engine-roster.md` when it is not. `join` is the hub's native wait — `wait_agent` on Codex CLI, the background `Agent` result on Claude Code — and a process wait plus an artifact read on the headless one.
 
-The driver audits via the subagents' return values: `convergence_detection`, `deduplication_guard`, `cost-per-completed-task`, `circuit_breaker`. A stuck loop or an exceeded budget terminates the running spawn — `close_agent` on the native path, killing the subprocess on the headless one — and escalates to the user.
+The driver audits via the subagents' return values: `convergence_detection`, `deduplication_guard`, `cost-per-completed-task`, `circuit_breaker`. A stuck loop or an exceeded budget terminates the running spawn — the hub's native stop (`close_agent` on Codex CLI) on the native path, killing the subprocess on the headless one — and escalates to the user.
 
 **Each cycle appends to `06-loop.md`** — what changed, what `code-review` flagged, and Δ. A loop that exits on `cap-reached` or `BLOCK` is the one whose per-cycle history the diagnosis handoff needs, and it is exactly the exit at which nobody has time to reconstruct it (`reference/run-record.md`).
 
@@ -78,13 +78,13 @@ A **Phase 5 → 6 handoff prerequisite.** Before consuming the contract, verify:
 - the CLI bound to `build` is reachable and answers a spawn, not merely `--version`,
 - the CLI bound to `judge` is reachable **and is not the same CLI as `build`**, wherever a second CLI is reachable at all — the in-loop checker separation and the acceptance verification both depend on it. On a single-engine workspace the condition is unsatisfiable by construction: this is the one check that **reports** the collapse rather than blocking on it, and the run carries `engine_independence: context-only`,
 - `agents.max_depth ≥ 2` on the native path,
-- the required subagent tools are permitted (`spawn_agent`, `wait_agent`, `send_input`, `resume_agent`, `close_agent`), or the headless binary accepts its artifact flag.
+- the hub's spawn API is permitted (`reference/contracts.md` §5 — `Agent` on Claude Code; `spawn_agent`, `wait_agent`, `send_input`, `resume_agent`, `close_agent` on Codex CLI; `/agent` on agy), or the headless binary accepts its artifact flag.
 
 If any check fails, **never silently fall back.** The chain's cost and convergence model assumes the declared engine, and a silent swap invalidates the budget envelope the run was authorized against. Enter the degradation protocol instead.
 
 ## Engine Degradation Protocol
 
-Hard-failing the handoff throws away five completed phases over a runner problem. So unavailability is surfaced as an **explicit choice with a restated cost model**, presented once via `AskUserQuestion`. It is a confirmation gate, not a fallback.
+Hard-failing the handoff throws away five completed phases over a runner problem. So unavailability is surfaced as an **explicit choice with a restated cost model**, presented once through the hub's user-question mechanism (`AskUserQuestion` on Claude Code; a plain question and stop on a hub without one). It is a confirmation gate, not a fallback.
 
 | Option | `build` rebinds to | Restated model | When it is the right call |
 |--------|--------------------|----------------|---------------------------|
