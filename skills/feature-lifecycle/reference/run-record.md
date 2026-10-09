@@ -57,7 +57,7 @@ Rules on the rename:
 
 - It happens **at most once per run**, and only on an approved boundary confirm. Every later phase opens under the final id, so nothing downstream ever sees the provisional one.
 - `RUN.md` records both (`id:` and `id_provisional:`), because the Phase 0 document was written under the old name and a reader tracing it back needs the mapping.
-- A **rejected** boundary confirm keeps the provisional id and sets `Status: declined-at-P0` (§ Run Status). The run stops, and its `00-bootstrap.md` is worth keeping — the scored candidates and the objection are exactly what the next `bootstrap` scan should not re-derive.
+- A **rejected** boundary confirm keeps the provisional id and sets `Status: declined-at-P0`; an unanswered one sets `aborted-at-P0`, which stays resumable (§ Run Status). The run stops, and its `00-bootstrap.md` is worth keeping — the scored candidates and the objection are exactly what the next `bootstrap` scan should not re-derive.
 - The directory has not been committed at this point — the run record is committed at Ship — so the rename is a filesystem move with no history to rewrite.
 
 Goal-supplied mode has no such stage: the title is the invocation argument, so the final id is known at launch.
@@ -240,9 +240,9 @@ An `open` document means that phase did not finish. Resume **re-enters that phas
 | Status | Meaning | Resumable |
 |--------|---------|-----------|
 | `running` | A phase document is `open` and the hub has not exited | Yes — found by a later invocation, it means the hub died without writing a stop; treat it as `aborted-at-<phase of the open document>` |
-| `aborted-at-<P>` | Stopped at or inside phase `<P>` by the budget ceiling, the circuit breaker, an unanswered engine choice, or a user interrupt | Yes |
-| `blocked-at-<P>` | Stopped on a typed blocker only the user or an external party can clear — missing authority, missing required evidence, a spec-owner return | Yes, once the blocker named in `Stopped because` is cleared |
-| `declined-at-P0` | The 0e boundary confirm was rejected or went unanswered; the record keeps the provisional id | No — a later `bootstrap` reads its `00-bootstrap.md` as prior evidence instead |
+| `aborted-at-<P>` | Stopped at or inside phase `<P>` by the budget ceiling, the circuit breaker, a Risk-Gate No-Go the run stopped on rather than re-entered, an unanswered question (the 0e boundary confirm, an engine choice), or a user interrupt | Yes |
+| `blocked-at-<P>` | Stopped on a typed blocker only the user or an external party can clear — missing authority, missing required evidence, a spec-owner return, an acceptance failure past the re-entry cap awaiting the user's decision | Yes, once the blocker named in `Stopped because` is cleared |
+| `declined-at-P0` | The 0e boundary confirm was explicitly rejected; the record keeps the provisional id | No — a later `bootstrap` reads its `00-bootstrap.md` as prior evidence instead |
 | `shipped` | The Ship gate passed | No |
 | `superseded` | A later run shipped the same goal; awaiting prune (§ Retention) | No |
 | `closed` | The user ended the run without shipping it | No |

@@ -97,7 +97,26 @@ REFERENCE_PATH_RE = re.compile(r"reference/[A-Za-z0-9_.-]+\.md")
 # section number (`§3`) or the heading's words running on into the prose. Where the
 # heading text ends is unknowable from the citation alone, so the check runs the other
 # way round: some heading in the target must be a prefix of what follows the `§`.
-SECTION_CITE_RE = re.compile(r"(?:`((?:reference/)?[A-Za-z0-9_.-]+\.md)`\s*)?§\s*(\d+|[^\n]+)")
+# The capture stops at the next `§`, so a second citation on the line is checked too;
+# a number counts as a section number only when no word character follows it
+# (`§3`, `§10.`), so `§ 0e. CONFIRM` is matched as a heading. A `§` not followed by
+# an alphanumeric (prose about the sign itself) is not a citation.
+CITE_FILE_RE = re.compile(r"`([A-Za-z0-9_./-]+\.md)`\s*$")
+CITE_TEXT_RE = re.compile(
+    r"\s*(\d+(?!\w)|[A-Za-z0-9][^`§]*(?:`[^`]*`[^`§]*)*?(?=`[A-Za-z0-9_./-]+\.md`\s*§|§|$))")
+
+
+def citations(line: str):
+    """Yield (target file or None, cited text) for each `§` on a line. The target is
+    the backticked `.md` path immediately before the `§`; the cited text runs to the
+    next citation, so neither swallows its neighbour."""
+    for i, ch in enumerate(line):
+        if ch != "§":
+            continue
+        target = CITE_FILE_RE.search(line[:i])
+        text = CITE_TEXT_RE.match(line, i + 1)
+        if text:
+            yield (target.group(1) if target else None), text.group(1)
 
 LINE_TIERS = ((1000, "P1"), (700, "P2"), (500, "P3"))
 TOKEN_TIERS = ((15000, "P1"), (10000, "P2"), (7000, "P3"))
@@ -199,15 +218,31 @@ def _resolves(cited: str, target_headings: list[str]) -> bool:
     return False
 
 
+#: CJK and fullwidth blocks, flagged whatever the character's category: `。` and `「`
+#: are punctuation, not letters, and still mark the text as non-Latin.
+CJK_RANGES = ((0x2E80, 0x9FFF), (0xA000, 0xA4CF), (0xAC00, 0xD7AF), (0xF900, 0xFAFF),
+              (0xFE30, 0xFE4F), (0xFF00, 0xFFEF), (0x20000, 0x3FFFF))
+#: Letters whose Unicode names omit LATIN but which are Latin-script prose:
+#: the Spanish/Portuguese ordinals and the micro sign.
+LATIN_EXTRAS = set("ªºµ")
+
+
 def _non_latin(text: str) -> set[str]:
-    """Characters that do not route as Latin-script prose: any letter whose Unicode
-    name is not LATIN (Cyrillic, Greek, Arabic, kana, CJK ideographs …), plus every
-    character from the CJK radicals block onward, letter or not (`。`, `「`)."""
+    """Characters that do not route as Latin-script prose: a letter or digit of another
+    script (Cyrillic, Greek, Arabic, Devanagari, kana …), and anything in a CJK or
+    fullwidth block. Modifier letters, combining marks and format characters (an
+    emoji's variation selector) carry no script of their own and pass, as do accented
+    Latin, ligatures and typographic punctuation (— → ≤ ∧ “ ” …)."""
     bad = set()
     for c in text:
-        if ord(c) > 0x2E80:
+        cp, cat = ord(c), unicodedata.category(c)
+        if any(lo <= cp <= hi for lo, hi in CJK_RANGES):
             bad.add(c)
-        elif unicodedata.category(c).startswith("L") and not unicodedata.name(c, "").startswith("LATIN"):
+        elif c in LATIN_EXTRAS or cat in ("Lm", "Mn", "Mc", "Me", "Cf"):
+            continue
+        elif cat.startswith("L") and "LATIN" not in unicodedata.name(c, ""):
+            bad.add(c)
+        elif cat == "Nd" and not c.isascii():
             bad.add(c)
     return bad
 
@@ -229,8 +264,7 @@ def lint_skill(skill_dir: Path, out: list[Finding]) -> None:
             out.append(Finding("P2", "C2", rel(skill_dir / stray),
                                "README.md inside the skill folder — put it at the repo root"))
 
-    # A CRLF checkout must not read as "no frontmatter" and fail F1 for the wrong reason.
-    text = skill_md.read_text(encoding="utf-8").replace("\r\n", "\n")
+    text = skill_md.read_text(encoding="utf-8")
     fm, body = parse_frontmatter(text)
 
     # F1
@@ -273,7 +307,8 @@ def lint_skill(skill_dir: Path, out: list[Finding]) -> None:
 
     # H1 — the markers are read out of the comment that opens with CAPABILITIES_SUMMARY,
     # so one that slipped below the `-->` (and now renders as prose) is missing.
-    summary = next((c for c in re.findall(r"<!--(.*?)-->", body, re.S) if CAPABILITY_MARKERS[0] in c), "")
+    summary = next((c for c in re.findall(r"<!--(.*?)-->", body, re.S)
+                    if c.lstrip().startswith(CAPABILITY_MARKERS[0])), "")
     for marker in CAPABILITY_MARKERS:
         if marker not in summary:
             where = "missing" if marker not in body else "outside the CAPABILITIES_SUMMARY comment —"
@@ -316,19 +351,24 @@ def lint_links(skill_dir: Path, out: list[Finding]) -> None:
             # contracts.md three times, not SKILL.md twice. A bare `§ Heading` is
             # always the citing file's own.
             last_cited = path
-            for match in SECTION_CITE_RE.finditer(line):
-                if match.group(1):
-                    context = last_cited = skill_dir / match.group(1)
-                elif match.group(2)[:1].isdigit():
+            for target, quoted in citations(line):
+                if target:
+                    context = last_cited = skill_dir / target
+                elif quoted[:1].isdigit():
                     context = last_cited
                 else:
                     context = path
                 if not context.is_file():
-                    continue  # a dead file path is L2's finding, not this one's
+                    # L2 only sees `reference/…` paths; a citation to any other file
+                    # (`contracts.md` § X from a sibling) is checked here.
+                    if target and not REFERENCE_PATH_RE.fullmatch(target):
+                        out.append(Finding("P2", "L4", f"{rel(path)}:{lineno}",
+                                           f"cites `{target}`, which is not a file in the skill"))
+                    continue
                 if context not in heading_cache:
                     heading_cache[context] = headings(context.read_text(encoding="utf-8"))
-                if not _resolves(match.group(2), heading_cache[context]):
-                    shown = "§ " + match.group(2)
+                if not _resolves(quoted, heading_cache[context]):
+                    shown = "§ " + quoted
                     shown = shown if len(shown) <= 50 else shown[:47] + "..."
                     out.append(Finding("P2", "L4", f"{rel(path)}:{lineno}",
                                        f"\"{shown}\" names no heading in {context.relative_to(skill_dir).as_posix()}"))
@@ -475,6 +515,13 @@ MUTATIONS = [
     ("L4", "catches a citation to a heading that exists only inside a code fence",
      _edit("reference/phase-contracts.md", lambda s: s.replace(
          "§ Output Envelope)", "§ Residual Ledger)", 1))),
+    ("L4", "checks a second citation on the same line",
+     _edit("SKILL.md", lambda s: s.replace(
+         "(`reference/loop-engine.md` § Termination Bounds); acceptance-gap",
+         "(`reference/loop-engine.md` § Termination Bounds, `reference/loop-engine.md` § No Such Section); acceptance-gap", 1))),
+    ("L4", "catches a citation to a file outside reference/ that does not exist",
+     _edit("reference/phase-contracts.md", lambda s: s.replace(
+         "`reference/engine-roster.md` § Phase → Role Map owns", "`contracts.md` § Phase → Role Map owns", 1))),
     ("L3", "catches an uncited reference file", _add_orphan_reference),
     ("L3", "catches a reference file that cites only itself", _add_self_citing_reference),
     ("C2", "catches a README inside the skill folder", _add_readme),

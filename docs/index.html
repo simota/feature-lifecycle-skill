@@ -655,7 +655,7 @@ db_change=  budget=</pre>
       </div>
       <div class="pc-gate">
         <span class="lab">pass criteria</span>
-        <code>High-RPN residuals = 0 or a mitigation defined (AP-class A needs all three layers: detection / prevention / recovery) · blast radius Go or Conditional-Go · emotional valence ≥ median ∧ dark patterns = 0 ∧ WCAG 3.0 Bronze ≥ 3.5 ∧ cognitive load in range · unmitigated high-severity findings = 0 ∧ every new entry point has a declared authz rule ∧ every newly persisted or transmitted field has a declared data class</code>
+        <code>High-RPN modes lacking the required mitigation = 0 (threshold declared before scoring; AP-class A needs all three layers: detection / prevention / recovery) · blast radius Go or Conditional-Go · emotional valence ≥ median ∧ dark patterns = 0 ∧ WCAG 3.0 Bronze ≥ 3.5 ∧ cognitive load in range · unmitigated high-severity findings = 0 ∧ every new entry point has a declared authz rule ∧ every newly persisted or transmitted field has a declared data class</code>
       </div>
     </article>
 
@@ -804,7 +804,7 @@ db_change=  budget=</pre>
       <text x="590" y="336" text-anchor="middle" font-family="'JetBrains Mono',monospace" font-size="10" fill="currentColor" opacity=".65">not converged → next cycle, up to the ceiling for the build engine</text>
     </svg>
     </div>
-    <figcaption><code>spawn(role, …)</code> is the native subagent API when that role is the hub, and a headless invocation when it is not — <code>codex exec … -o &lt;abs path&gt;</code>, <code>claude -p … --output-format json</code>, or a pty-wrapped <code>agy -p</code>. <code>join</code> is <code>wait_agent</code> on the native path, a process wait plus an artifact read on the headless one. The driver audits via the subagents' return values: <code>convergence_detection</code>, <code>deduplication_guard</code>, <code>cost-per-completed-task</code>, <code>circuit_breaker</code>.</figcaption>
+    <figcaption><code>spawn(role, …)</code> is the native subagent API when that role is the hub, and a headless invocation when it is not — <code>codex exec … -o &lt;abs path&gt;</code>, <code>claude -p … --output-format json</code>, or a pty-wrapped <code>agy -p</code>. <code>join</code> is the hub’s native wait on the native path — <code>wait_agent</code> on Codex CLI, the background <code>Agent</code> result on Claude Code — and a process wait plus an artifact read on the headless one. The driver audits via the subagents' return values: <code>convergence_detection</code>, <code>deduplication_guard</code>, <code>cost-per-completed-task</code>, <code>circuit_breaker</code>.</figcaption>
   </figure>
 
   <h3>The iteration ceiling is keyed to the <code>build</code> engine</h3>
@@ -1107,8 +1107,8 @@ artifacts/
     <div>
       <h3 style="margin-top:0">The budget envelope</h3>
       <ul class="rule-list">
-        <li data-n="→"><b>Declared at launch.</b> Default ceiling = the cost-profile estimate × 1.5; the user may override.</li>
-        <li data-n="→"><b>A warning at 80%.</b> <code>GUIDED</code>/<code>INTERACTIVE</code> pause for a continue/abort decision; <code>AUTORUN_FULL</code> logs and proceeds to the ceiling.</li>
+        <li data-n="→"><b>Granted at launch.</b> The proposed ceiling defaults to the cost-profile estimate × 1.5 and binds only once the user grants it; the user may set another.</li>
+        <li data-n="→"><b>A warning at 80%.</b> <code>GUIDED</code>/<code>INTERACTIVE</code> pause for a continue/abort decision; <code>AUTORUN</code>/<code>AUTORUN_FULL</code> log and proceed to the ceiling.</li>
         <li data-n="→"><b>The ceiling is a hard stop</b>, not advisory. It is what protects against a runaway Phase 6 loop or a re-entry storm from the acceptance gate.</li>
       </ul>
       <h3>Checkpoint and resume</h3>

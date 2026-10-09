@@ -157,15 +157,7 @@ Rosters, conditional rows and the chain template are `reference/phase-contracts.
 
 **Detect the hub engine once, before the first spawn** — `Agent` → Claude Code; `spawn_agent` → Codex CLI; `/agent` in a TUI main session → agy. Bind the spawn API and model map per `reference/contracts.md` §5. The hub owns sequencing, gates, checkpoints, the budget ledger, and the Delivery Report, and delegates none of them.
 
-**Then probe all three CLIs and resolve the engine roster** → `reference/engine-roster.md`. The chain runs against three roles, not one engine:
-
-| Role | Chosen for | Default CLI |
-|------|-----------|-------------|
-| `build` | Tool-heavy edit loops | Codex CLI |
-| `judge` | Adversarial reading against a stated contract | Claude Code |
-| `breadth` | Wide sweeps, long context, multimodal | agy |
-
-Which row runs on which role is `reference/engine-roster.md` § Phase → Role Map — the one copy, so there is nothing to drift against.
+**Then probe all three CLIs and resolve the engine roster** → `reference/engine-roster.md` § Roles, Not Preferences: `build` (tool-heavy edit loops), `judge` (adversarial reading against a contract) and `breadth` (wide, long-context, multimodal sweeps), defaulting to the CLIs of § Core Contract. Which row runs on which role is `reference/engine-roster.md` § Phase → Role Map — the one copy, so there is nothing to drift against.
 
 A role whose CLI **is** the hub uses the native spawn API; a role whose CLI is not uses the headless invocation contract of `reference/engine-roster.md`. A cross-engine spawn is a subprocess joined by the hub, never a direct agent-to-agent handoff.
 
@@ -205,7 +197,7 @@ Two tiers keep every hub at ≤11 with a real merge surface each. The chain adds
 
 ## Termination Bounds and Cost
 
-Implementation loop `≤ 6` cycles by default, keyed to the `build` engine (`reference/loop-engine.md` § Termination Bounds); acceptance-gap re-entry `≤ 2`, then the user decides. On any non-`ACCEPT` exit the Delivery Report states which acceptance criteria remain unmet and the residual gap — the chain never ships a silent partial. Exit reasons → `reference/loop-engine.md` § Termination Bounds.
+Loop and re-entry bounds are § Core Contract's, with the per-engine ceiling and exit reasons in `reference/loop-engine.md` § Termination Bounds; past the re-entry cap the user decides. On any non-`ACCEPT` exit the Delivery Report states which acceptance criteria remain unmet and the residual gap — never a silent partial.
 
 Cost runs 11-13 agents (Lite) / 17-22 (Standard) / 23-30 (Full), plus 4-8 for Phase 0, plus loop iterations — 27-61 spawns at the Full autonomous profile. The chain is not free; the run-level budget envelope, the loop's cost-per-task breaker, and the Ask First gates are what bound it → `reference/delivery-report.md` § Cost Profile. For repeated similar requests, propose a project-local skill to amortise the chain design cost instead of re-running the chain.
 
