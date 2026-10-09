@@ -109,12 +109,13 @@ make lint        # block on P1/P2 findings
 make lint-strict # also block on advisory size findings
 make selftest    # prove each check blocks, and names itself, when broken
 make check       # both — the full gate
+make eval        # verify the frozen adversarial corpus and its grader (tests/adversarial/)
 make hooks       # install the pre-commit hook — lints the staged content
-                 # (lint always; selftest when tools/ changed)
+                 # (lint always; selftest when tools/ changed; eval when tests/adversarial/ changed)
 ```
 
 `tools/lint.py` checks frontmatter, the capability markers, the required section
-headings, size tiers, and — the one that matters for a repository like this —
+headings, size tiers, that every `§ <section>` citation names a heading that exists (L4), and — the one that matters for a repository like this —
 **the standalone invariant (L1)**: no file may reference a `_common/` contract
 path. The chain was extracted from a repository where that directory sat beside every
 skill; here there is none, so such a path renders fine to a human browsing the

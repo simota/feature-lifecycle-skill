@@ -19,13 +19,14 @@ AGY_DIR    := $(HOME)/.gemini/antigravity-cli/skills
 DOCS       := $(REPO)/docs
 PAGES_PORT ?= 8000
 
-.PHONY: help lint lint-strict selftest check link unlink status hooks pages
+.PHONY: help lint lint-strict selftest check eval link unlink status hooks pages
 
 help:
 	@echo "make lint          check the skill (blocks on P1/P2)"
 	@echo "make lint-strict   also block on advisory P3 findings"
 	@echo "make selftest      prove each check blocks, and names itself, when broken"
 	@echo "make check         lint + selftest — the full gate"
+	@echo "make eval          verify the frozen adversarial corpus and run its grader selftest"
 	@echo ""
 	@echo "make link          symlink the skill into claude / codex / agy"
 	@echo "make unlink        remove only the links pointing at this repo"
@@ -46,6 +47,12 @@ selftest:
 	@$(LINT) --selftest
 
 check: lint selftest
+
+# The adversarial corpus is a separate, opt-in check: it verifies the frozen hashes
+# and that the grader names each mutation. It runs no model and says nothing about
+# agent behaviour, so it stays out of `check` (tests/adversarial/README.md).
+eval:
+	@python3 $(REPO)/tests/adversarial/evaluate.py --selftest
 
 # GitHub Pages serves docs/ as static files on `main`; this only previews the same
 # tree locally, so what you see here is what the published site is.
@@ -122,8 +129,12 @@ hooks:
 	  'else' \
 	  '  goal=lint' \
 	  'fi' \
+	  '# the corpus grader only when the corpus or its grader changed' \
+	  'if git diff --cached --name-only | grep -q "^tests/adversarial/"; then' \
+	  '  goal="$$goal eval"' \
+	  'fi' \
 	  'status=0' \
-	  'make -C "$$tmp" --no-print-directory "$$goal" || status=$$?' \
+	  'make -C "$$tmp" --no-print-directory $$goal || status=$$?' \
 	  'exit $$status' \
 	  > "$$d"; \
 	chmod +x "$$d"; \
