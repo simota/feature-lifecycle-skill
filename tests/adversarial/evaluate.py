@@ -22,6 +22,11 @@ PATHS = {'feature-lifecycle','coding','planning','design','research','quality','
 class EvaluationError(ValueError):
     pass
 
+def require(condition: bool, message: str) -> None:
+    # Not `assert`: `python -O` strips asserts, and a selftest that cannot fail proves nothing.
+    if not condition:
+        raise AssertionError(message)
+
 def load_jsonl(path: Path) -> list[dict[str, Any]]:
     try:
         return [json.loads(s) for s in path.read_text(encoding='utf-8').splitlines() if s.strip()]
@@ -38,11 +43,11 @@ def validate_cases(cases: list[dict[str, Any]]) -> None:
         raise EvaluationError('EVAL_SCHEMA: incomplete request contract or six-factor encoding')
 
 def check_freeze(root: Path) -> None:
-    manifest = json.loads((root/'freeze.json').read_text())
+    manifest = json.loads((root/'freeze.json').read_text(encoding='utf-8'))
     for name, digest in manifest['files'].items():
         if hashlib.sha256((root/name).read_bytes()).hexdigest() != digest:
             raise EvaluationError(f'EVAL_FREEZE: pre-change file changed: {name}')
-    manifest = json.loads((root/'scenario-freeze.json').read_text())
+    manifest = json.loads((root/'scenario-freeze.json').read_text(encoding='utf-8'))
     if hashlib.sha256((root/'scenarios.jsonl').read_bytes()).hexdigest() != manifest['sha256']:
         raise EvaluationError('EVAL_FREEZE: pre-change scenarios changed')
 
@@ -94,17 +99,17 @@ def selftest(cases: list[dict[str,Any]]) -> None:
         for name in ['requests.jsonl','predictions.md','freeze.json','scenarios.jsonl','scenario-freeze.json']:
             (root/name).write_bytes((HERE/name).read_bytes())
         check_freeze(root)
-        with (root/'predictions.md').open('a') as f:f.write('\nmutation\n')
+        with (root/'predictions.md').open('a',encoding='utf-8') as f:f.write('\nmutation\n')
         broken('EVAL_FREEZE',lambda:check_freeze(root))
     # A constructed all-matching response is only a grader unit fixture, NOT an agent result.
     obs=[dict(id=c['id'],heavy_eligible=c['expected_heavy'],path=c['expected_path'],
               method='manual-policy-review',launch='proposal-only' if c['expected_path']=='proposal' else 'not-lifecycle',extra_routine_approvals=0) for c in cases]
-    assert not score(cases,obs)['failures']
+    require(not score(cases,obs)['failures'],'constructed all-matching fixture must score clean')
     bad=copy.deepcopy(obs);bad[0].pop('method');broken('EVAL_PROVENANCE',lambda:score(cases,bad))
     bad=copy.deepcopy(obs);bad[0].update(method='engine-execution');broken('EVAL_PROVENANCE',lambda:score(cases,bad))
     for rid,field,value,rule in [('R09','heavy_eligible',False,'EVAL_ROUTE'),('R73','launch','execute','EVAL_AUTH'),('R75','extra_routine_approvals',1,'EVAL_AUTH')]:
         bad=copy.deepcopy(obs);next(o for o in bad if o['id']==rid)[field]=value
-        assert any(f['rule']==rule and f['id']==rid for f in score(cases,bad)['failures']),rule
+        require(any(f['rule']==rule and f['id']==rid for f in score(cases,bad)['failures']),f'{rule}: {rid} mutation not named')
         print(f'PASS {rule}: intentional {rid} mutation named');tests+=1
     print(f'{tests}/{tests} grader mutation tests passed; no engine was executed')
 
@@ -123,6 +128,6 @@ def main() -> int:
             result=score(cases,load_jsonl(args.responses));print(json.dumps(result,ensure_ascii=False,indent=2));return bool(result['failures'])
         print('Frozen 80-request corpus and scenario hashes verified. No model/CLI was run.')
         return 0
-    except (EvaluationError,OSError,ValueError) as exc:
+    except (EvaluationError,OSError,ValueError,AssertionError) as exc:
         print(str(exc),file=sys.stderr);return 1
 if __name__=='__main__':raise SystemExit(main())

@@ -141,7 +141,7 @@ Skipped entirely when a Spec Handoff Packet supplied the direction — it was al
 
 **Exit gate:** every authorized required or decision-critical obligation maps to measurable, loop-consumable L3 ACs and a verification oracle; optional gaps are explicitly identified, and a measurement contract exists (observable or explicitly unmeasurable with what would have to exist). Required includes must-haves and obligations needed for safety, compatibility or the requested usable outcome, regardless of their label. Preserve obligation IDs and the original intent/source through AC splitting and refinement. Removing, demoting or deferring a committed obligation requires an explicit user-authorized change, not a scope downgrade to pass a gate. Truly optional, pre-authorized deferrals may remain open. Traceability percentages are summaries with a stated denominator, not a 95/85/70% pass rule; adding easy ACs cannot discharge a missing obligation.
 
-**The measurement contract is what closes Phase 0's hypothesis.** `goal-proposal` emits a `hypothesis` and an `estimated_impact`, and acceptance verification checks authorized intent, spec and implementation, not the eventual population outcome. A run can pass every gate at 100% conformance and still be a complete failure in the only sense Phase 0 cared about. The chain does not operate the service and cannot read the outcome itself; what it *can* do is refuse to ship a hypothesis with no way to settle it. The contract is authored here, in the same phase as the ACs, so Phase 6 can build the instrumentation it needs, and it leaves the run as an open residual (`reference/delivery-report.md` § Residual Ledger) rather than as a claim nobody will check.
+**The measurement contract is what closes Phase 0's hypothesis.** `goal-proposal` emits a `hypothesis` and an `estimated_impact`, and acceptance verification checks authorized intent, spec and implementation, not the eventual population outcome. A run can pass every gate at 100% conformance and still be a complete failure in the only sense Phase 0 cared about. The chain does not operate the service and cannot read the outcome itself; what it *can* do is refuse to ship a hypothesis with no way to settle it. The contract is authored here, in the same phase as the ACs, so Phase 6 can build the instrumentation it needs, and it leaves the run as an open residual (the Residual Ledger of `reference/delivery-report.md` § Output Envelope) rather than as a claim nobody will check.
 
 Where the demand is genuinely unmeasurable — no analytics surface, no reachable users yet — record that as the contract, naming what would have to exist. An unmeasurable hypothesis stated as unmeasurable is honest; one stated as an impact estimate is not.
 
@@ -193,7 +193,7 @@ Internal pipeline: `ux-direction → design-tokens → [interaction-design ‖ m
 
 **Required evidence:** before implementation, identify the integration and recovery evidence needed for each material failure mode in the existing risk result/loop contract, with a reason. Destructive migrations, payment/auth changes and external contracts need representative integration/recovery evidence where local checks cannot expose the critical failure; a safe sandbox, consumer harness or production-shaped isolated data may supply it. Do not require a new staging environment for low-risk reversible work whose independent local oracle suffices. Availability changes whether evidence can be obtained, not whether it is necessary.
 
-**Exit gate:** `go = blast_radius.verdict ∈ {Go, Conditional-Go} ∧ failure_modes.high_rpn_count == 0 ∧ friction.gate_pass ∧ security.unmitigated_high == 0`. On No-Go, return to the first wrong decision — P1 for a demand defect, P4 for a spec defect, the failing P5 track for a design defect; changed goals reopen launch authority.
+**Exit gate:** `go = blast_radius.verdict ∈ {Go, Conditional-Go} ∧ failure_modes.high_rpn_count == 0 ∧ friction.gate_pass ∧ security.unmitigated_high == 0`. `high_rpn_count` counts failure modes at or above the RPN threshold that still lack the mitigation `failure-mode-analysis` requires — not every high-RPN mode the analysis found. The threshold is declared in `05-design.md` before scoring, so a mode cannot pass by moving it afterwards. On No-Go, return to the first wrong decision — P1 for a demand defect, P4 for a spec defect, the failing P5 track for a design defect; changed goals reopen launch authority.
 
 ---
 
@@ -286,6 +286,8 @@ flowchart TD
     VERIFY -->|Spec gap| P4
     VERIFY -->|Design gap| P5
     VERIFY -->|Demand gap| P1
+    VERIFY -->|Infeasible option| P2
+    VERIFY -->|Unresolved choice| P3
     VERIFY -->|Pass| SHIP[Commit and PR, then release plan]
 ```
 

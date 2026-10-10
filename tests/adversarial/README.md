@@ -7,7 +7,7 @@ Baseline: `b7383dc25ac99edcf88faa80039e7bb1ea228853`.
 `after-policy-review.jsonl` records the reviewer's reading of the changed contract. **It is not output from Codex, Claude, agy, or a live agent run.** The exact agreement with authored routes is not an empirical classifier accuracy claim. Eight underspecified requests remain `clarify`; heavy eligibility does not authorize launch. R76 remains unchanged-correct because the existing user-precedence rule already honors its explicit no-build request, despite the more pessimistic frozen risk annotation.
 
 ```sh
-python3 tests/adversarial/evaluate.py --selftest
+python3 tests/adversarial/evaluate.py --selftest     # or: make eval
 python3 tests/adversarial/evaluate.py --responses tests/adversarial/after-policy-review.jsonl
 python3 tests/adversarial/evaluate.py --export-prompts /tmp/feature-requests.jsonl
 ```

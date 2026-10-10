@@ -3,7 +3,7 @@
 **Purpose:** The shared rules the chain depends on, carried inside the skill so it runs with no external contract directory. Everything a phase, gate, or spawn needs is here.
 **Read when:** Entering the loop gate, grading evidence, selecting the loop driver, spawning across an engine boundary, or emitting the run's self-assessment. Role-to-CLI binding and the headless invocation contract live in `reference/engine-roster.md`.
 
-**Provenance:** distilled from the `_common/` protocol set of the `agent-skills` repository (`LOOP_PRECONDITIONS`, `EVIDENCE_LADDER`, `PROJECT_LOCAL_SKILLS`, `SUBAGENT` / `CLI_COMPATIBILITY`, `WORK_GATE`, `HANDOFF`, `GIT_GUIDELINES`, `OPERATIONAL`). The chain carries its own copy on purpose: a standalone skill that names a contract it cannot open has no contract. When the chain runs *inside* that repository, its `_common/` originals are authoritative and this file defers to them.
+**Provenance:** distilled from the `_common/` protocol set of the `agent-skills` repository (`LOOP_PRECONDITIONS`, `EVIDENCE_LADDER`, `PROJECT_LOCAL_SKILLS`, `SUBAGENT` / `CLI_COMPATIBILITY`, `WORK_GATE`, `HANDOFF`, `GIT_GUIDELINES`, `OPERATIONAL`). The chain carries its own copy on purpose: a standalone skill that names a contract it cannot open has no contract. When the chain runs *inside* that repository — or any repository that ships the same `_common/` protocol set — those originals are authoritative and this file defers to them.
 
 ## Contents
 - 1. Precedence
@@ -26,7 +26,8 @@ When two rules disagree, resolve in this order rather than averaging them:
 1. **The user's own words in this session** — nothing here outranks them.
 2. **The host repository's instruction files** (`CLAUDE.md` / `AGENTS.md`) — they describe *this* repo; the chain describes every repo.
 3. **`SKILL.md`** — the chain's Core Contract and Boundaries bind for work inside its domain.
-4. **This file** — in effect on every run.
+4. **A host `_common/` protocol set**, where the repository ships one — its originals outrank the distilled copies below (the **Provenance** line at the top of this file).
+5. **This file** — in effect on every run.
 
 Two rules on top of the order:
 
@@ -205,9 +206,9 @@ Three surfaces under `.agents/`, three jobs. The full split — including the De
 **Apply when:** [the future scenario this changes]
 ```
 
-- **Before starting**: read `.agents/feature-lifecycle.md` and `.agents/PROJECT.md` to load prior context. Create them if missing. Also scan `.agents/feature-lifecycle/runs/*/RUN.md` for a run whose `Status` is not `shipped` — that is the resumable checkpoint `SKILL.md` § Subcommand Dispatch requires a bare invocation to surface rather than pick past.
+- **Before starting**: read `.agents/feature-lifecycle.md` and `.agents/PROJECT.md` to load prior context. Create them only once a run is admitted and authorized — a read-only proposal reads, it never writes. Also scan `.agents/feature-lifecycle/runs/*/RUN.md` for a run whose `Status` is resumable (`reference/run-record.md` § Run Status) — that is the checkpoint `SKILL.md` § Subcommand Dispatch requires a bare invocation to surface rather than pick past.
 - **Before declaring complete**: append at least one entry if the run produced a reusable insight. If it produced none, say so explicitly in the activity log and skip the write.
-- **Activity log**: append `| YYYY-MM-DD | Feature Lifecycle | (action) | (files) | (outcome) |` to `.agents/PROJECT.md`.
+- **Activity log**: append `| YYYY-MM-DD | Feature Lifecycle | (action) | (files) | (outcome) |` to `.agents/PROJECT.md` — for an admitted run, including one that aborts; a read-only proposal writes nothing.
 
 ---
 

@@ -9,7 +9,7 @@ Feature Lifecycle is the heavyweight path. It is for the case where an upstream 
 The skill lives at `skills/feature-lifecycle/`; link that directory into each CLI's skills root.
 
 ```sh
-make link     # symlink into ~/.claude, ~/.codex and ~/.gemini — skips a root that does not exist
+make link     # symlink into ~/.claude, ~/.codex and ~/.gemini/antigravity-cli — skips a root that does not exist
 make status   # show where it is currently linked
 make unlink   # remove only the links pointing at this repo
 ```
@@ -19,7 +19,7 @@ make unlink   # remove only the links pointing at this repo
 ```sh
 ln -s "$PWD/skills/feature-lifecycle" ~/.claude/skills/feature-lifecycle    # Claude Code
 ln -s "$PWD/skills/feature-lifecycle" ~/.codex/skills/feature-lifecycle     # Codex CLI
-ln -s "$PWD/skills/feature-lifecycle" ~/.gemini/skills/feature-lifecycle    # agy
+ln -s "$PWD/skills/feature-lifecycle" ~/.gemini/antigravity-cli/skills/feature-lifecycle    # agy
 ```
 
 Then invoke it:
@@ -71,7 +71,7 @@ measured terms, and the verdict).
 
 The point is the middle two. The Delivery Report quotes a traceability percentage, a
 Risk-Gate verdict and a conformance number, and carries none of what they were computed
-from — the personas that produced no usable demand, the FMEA rows below the threshold,
+from — the evidence that did not support the selected needs, the FMEA rows below the threshold,
 the architecture the ADR rejected, the reuse scan's near-misses. Each is produced by an
 expensive phase, read once, and otherwise gone. A failed gate is the clearest case:
 "No-Go, returned to Phase 4" tells the re-entry nothing, so it re-derives a finding
@@ -87,7 +87,8 @@ worse than a missing one. Full contract → `skills/feature-lifecycle/reference/
 `docs/index.html` is a single self-contained page that visualises the chain — the
 phase-by-phase rosters and exit gates, the four-axis Risk Gate, the Phase 6 spawn
 sequence across the three engine lanes, the gate index, and every path that sends
-work back upstream. No build step, no dependencies, one file.
+work back upstream. No build step and no script dependencies — one file; its web fonts load
+from Google Fonts and fall back to system fonts when that request fails.
 
 ```sh
 make pages   # serve docs/ at http://localhost:8000 to preview
@@ -108,12 +109,13 @@ make lint        # block on P1/P2 findings
 make lint-strict # also block on advisory size findings
 make selftest    # prove each check blocks, and names itself, when broken
 make check       # both — the full gate
+make eval        # verify the frozen adversarial corpus and its grader (tests/adversarial/)
 make hooks       # install the pre-commit hook — lints the staged content
-                 # (lint always; selftest when tools/ changed)
+                 # (lint always; selftest when tools/ changed; eval when tests/adversarial/ changed)
 ```
 
 `tools/lint.py` checks frontmatter, the capability markers, the required section
-headings, size tiers, and — the one that matters for a repository like this —
+headings, size tiers, that every `§ <section>` citation names a heading that exists (L4), and — the one that matters for a repository like this —
 **the standalone invariant (L1)**: no file may reference a `_common/` contract
 path. The chain was extracted from a repository where that directory sat beside every
 skill; here there is none, so such a path renders fine to a human browsing the

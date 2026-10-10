@@ -58,11 +58,10 @@ Route a known defect or behavior-preserving change to diagnosis/coding; settled 
 - **Every phase boundary is a gate.** A phase advances only on its declared exit criterion; a failed gate returns to the *originating* phase, never forward with a note.
 - **The acceptance verification is independent and two-sided.** Conformance (every must-have AC met) *and* a negative pass (nothing outside the declared scope was built). It runs on the `judge` engine, which is never the engine that built wherever a second engine is reachable; on a single-engine workspace its independence is `context-only` and is reported as such (`reference/engine-roster.md`).
 - **Three engine roles, probed once.** `build` (Codex CLI), `judge` (Claude Code), and `breadth` (agy) are bound at launch and recorded before the first spawn. A role is a property of the work; a missing engine rebinds the role and is reported, never worked around.
-- **Bounded everywhere.** Implementation loop `≤ 6` cycles; acceptance-gap re-entry `≤ 2`; run-level budget ceiling is a hard stop that checkpoints, not a warning.
+- **Bounded everywhere.** Implementation loop `≤ 6` cycles by default, keyed to the `build` engine (`reference/loop-engine.md` § Termination Bounds); acceptance-gap re-entry `≤ 2`; run-level budget ceiling is a hard stop that checkpoints, not a warning.
 - **Consume upstream packets; never re-derive them.** A `spec` or `clone` packet collapses re-derivation, never verification → `reference/input-contracts.md`.
 - **Explicit launch authority, not silence.** Reuse a grant covering this goal, scope and budget; otherwise stop at the existing boundary confirm (§ Modes). Downstream Ask First boundaries remain.
 - **Every document is written to the Document Contract** (`reference/contracts.md` §9): ambiguity driven to zero first, then redundancy cut to nothing — one fact one home, no narration, no padding — with the scope bound, a number's source, a claim's status label and a rejected option's reason never compressed away.
-- Output language follows the CLI global config; identifiers, protocol markers, and schema keys stay English.
 
 ## Boundaries
 
@@ -80,7 +79,7 @@ Overlap with neighbouring roles → § Overlap Boundaries below. Operating rules
 - Rehearse the rollback at Ship. `declared-impossible(reason)` is honest, not a pass: require verified controls and explicit residual-risk acceptance (`reference/phase-contracts.md`).
 - Declare the budget envelope at launch and track cumulative spend against it.
 - Emit the Delivery Report on **every** exit, including aborts — best-so-far per phase, the residual gap, and the resume point.
-- Check/log to `.agents/PROJECT.md`.
+- Read `.agents/PROJECT.md` before starting; append the activity-log line only for an admitted run (`reference/contracts.md` §8) — a read-only proposal writes nothing.
 
 ### Ask First
 
@@ -128,7 +127,7 @@ This authorizes launch, not a new approval per phase. Existing Ask First, risk, 
 Parse the first token of user input.
 - Matches a Recipe Subcommand above → activate that Recipe; load only its "Read First" file at the initial step.
 - **`auto`, `goal=auto`, or a bare `feature-lifecycle` with no goal** → `bootstrap`, within § Modes authority; otherwise only a read-only proposal.
-- **A bare invocation with a resumable checkpoint present** (a `RUN.md` under `.agents/feature-lifecycle/runs/` whose status is not `shipped` → `reference/run-record.md`) → name the checkpoint and ask which: `resume` it, or start a fresh `bootstrap`. Never pick one silently — resuming the wrong run and re-deriving a finished one cost the same as each other's mistake.
+- **A bare invocation with a resumable checkpoint present** (a `RUN.md` under `.agents/feature-lifecycle/runs/` whose `Status` is resumable → `reference/run-record.md` § Run Status) → name the checkpoint and ask which: `resume` it, or start a fresh `bootstrap`. Never pick one silently — resuming the wrong run and re-deriving a finished one cost the same as each other's mistake.
 - Otherwise → default Recipe (`run`) with the input as the goal description.
 
 Behavior notes per Recipe:
@@ -158,15 +157,7 @@ Rosters, conditional rows and the chain template are `reference/phase-contracts.
 
 **Detect the hub engine once, before the first spawn** — `Agent` → Claude Code; `spawn_agent` → Codex CLI; `/agent` in a TUI main session → agy. Bind the spawn API and model map per `reference/contracts.md` §5. The hub owns sequencing, gates, checkpoints, the budget ledger, and the Delivery Report, and delegates none of them.
 
-**Then probe all three CLIs and resolve the engine roster** → `reference/engine-roster.md`. The chain runs against three roles, not one engine:
-
-| Role | Chosen for | Default CLI |
-|------|-----------|-------------|
-| `build` | Tool-heavy edit loops | Codex CLI |
-| `judge` | Adversarial reading against a stated contract | Claude Code |
-| `breadth` | Wide sweeps, long context, multimodal | agy |
-
-Which row runs on which role is `reference/engine-roster.md` § Phase → Role Map — the one copy, so there is nothing to drift against.
+**Then probe all three CLIs and resolve the engine roster** → `reference/engine-roster.md` § Roles, Not Preferences: `build` (tool-heavy edit loops), `judge` (adversarial reading against a contract) and `breadth` (wide, long-context, multimodal sweeps), defaulting to the CLIs of § Core Contract. Which row runs on which role is `reference/engine-roster.md` § Phase → Role Map — the one copy, so there is nothing to drift against.
 
 A role whose CLI **is** the hub uses the native spawn API; a role whose CLI is not uses the headless invocation contract of `reference/engine-roster.md`. A cross-engine spawn is a subprocess joined by the hub, never a direct agent-to-agent handoff.
 
@@ -206,7 +197,7 @@ Two tiers keep every hub at ≤11 with a real merge surface each. The chain adds
 
 ## Termination Bounds and Cost
 
-Implementation loop `≤ 6` cycles by default, keyed to the `build` engine (`reference/loop-engine.md` § Termination Bounds); acceptance-gap re-entry `≤ 2`, then the user decides. On any non-`ACCEPT` exit the Delivery Report states which acceptance criteria remain unmet and the residual gap — the chain never ships a silent partial. Exit reasons → `reference/loop-engine.md` § Termination Bounds.
+Loop and re-entry bounds are § Core Contract's, with the per-engine ceiling and exit reasons in `reference/loop-engine.md` § Termination Bounds; past the re-entry cap the user decides. On any non-`ACCEPT` exit the Delivery Report states which acceptance criteria remain unmet and the residual gap — never a silent partial.
 
 Cost runs 11-13 agents (Lite) / 17-22 (Standard) / 23-30 (Full), plus 4-8 for Phase 0, plus loop iterations — 27-61 spawns at the Full autonomous profile. The chain is not free; the run-level budget envelope, the loop's cost-per-task breaker, and the Ask First gates are what bound it → `reference/delivery-report.md` § Cost Profile. For repeated similar requests, propose a project-local skill to amortise the chain design cost instead of re-running the chain.
 
@@ -237,7 +228,7 @@ A complete run carries the following — a ceiling, not a floor. Emit only what 
 - The **Feature Lifecycle Delivery Report**, carrying every section of `reference/delivery-report.md` § The Feature Lifecycle Delivery Report — discovery summary · spec & AC with traceability % · design decisions · the four-axis Risk-Gate verdict · engine roster · loop record · AC-verify · upstream packet · follow-ups · measurement contract · ship status. Field-level content is that table's, not restated here.
 - Acceptance Provenance, the Decision Ledger, and the Residual Ledger with a class per leftover, plus the completion-sweep line and the resumable checkpoint on any non-ship exit
 - The **run-record path** (`.agents/feature-lifecycle/runs/<run-id>/`) and `run_record_committed`, so the phase documents behind every number above can be opened (`reference/run-record.md`)
-- Output language follows the CLI global config (`settings.json` `language` field, `CLAUDE.md`, `AGENTS.md`, or `GEMINI.md`). Code, identifiers, file paths, CLI commands, and technical terms remain in English.
+- Output language follows the CLI global config (`settings.json` `language` field, `CLAUDE.md`, `AGENTS.md`, or `GEMINI.md`). Code, identifiers, file paths, CLI commands, protocol markers, schema keys and technical terms remain in English.
 
 ## Collaboration
 

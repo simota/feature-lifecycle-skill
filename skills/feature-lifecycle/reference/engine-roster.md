@@ -77,6 +77,8 @@ An empty capture from a reachable CLI is a **capture failure** first — one typ
 
 Verified against Claude Code 2.1.x, Codex CLI (`codex exec`), and agy 1.1.x. Every non-hub spawn runs with an absolute working directory and an absolute artifact path.
 
+`'<prompt>'` below marks the argument position, not a quoting recipe. The prompt carries the spec's `non_goals` and ACs verbatim, so it contains quotes, backticks and `$` as a matter of course: pass it as a single argv element from a process API (`subprocess.run([...])`), or through stdin where the CLI reads it (`claude -p` and `codex exec -` do), never by interpolating it into a shell string. A prompt that broke out of its quoting runs as a command on the hub's machine.
+
 | CLI | Headless invocation | Authoritative output | Trap |
 |-----|--------------------|----------------------|------|
 | Claude Code | `claude -p '<prompt>' --output-format json --model <model> --add-dir <abs ws> --permission-mode <mode>` | stdout, parsed as JSON | Bare `-p` prints prose; without `--output-format json` there is nothing to parse deterministically |
@@ -110,7 +112,7 @@ Concurrency: cross-engine spawns run as background processes and are joined by t
 | P5 · Gate | `blast-radius-analysis` | `breadth` | Blast radius is a whole-repo read |
 | P5 · Gate | `friction-walkthrough` | `breadth` | Cognitive walkthrough and WCAG simulation |
 | P5 · Gate | `security-review` | `judge` | Attack surface, authz, data class, and regulatory exposure — adversarial reading of what the change now exposes |
-| P6 | — → `reference/loop-engine.md` § In-Loop Roster | mixed | That file owns the per-row assignment because it also owns the spawn sequence the roles appear in; splitting them would put the same rows in two files |
+| P6 | — → `reference/loop-engine.md` § In-Loop Roster and Spawn Sequence | mixed | That file owns the per-row assignment because it also owns the spawn sequence the roles appear in; splitting them would put the same rows in two files |
 | VERIFY | `acceptance-verification` — conformance, negative pass, and the conditional integration-evidence pass | `judge` | Hard rule 1 |
 | SHIP | `commit-and-pr`, `release-plan`, `rollback-rehearsal` | hub | Commits, PR, release plan, and proving the reverse path are the hub's to own |
 
