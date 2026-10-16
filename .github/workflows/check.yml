@@ -14,7 +14,7 @@ jobs:
   check:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       # lint + selftest: the skill's static contract, and proof each check can fail
       - run: make check
       # the frozen adversarial corpus and its grader; runs no model
