@@ -54,7 +54,7 @@ Run **once, before the first spawn**, and cache the result for the run.
 Two probe results are not the same thing and must not be collapsed:
 
 - **Absent** — the binary is not on PATH. Rebind the role.
-- **Present but unusable** — the binary answers, but a role spawn fails on auth, quota, or config. This is a *transient* blocker; it is surfaced through the degradation protocol (`reference/loop-engine.md`) with its abort-and-resume option, not silently rebound.
+- **Present but unusable** — the binary answers, but a role spawn fails on auth, quota, or config. `--version` cannot detect this; only a spawn can. It is a *transient* blocker, never silently rebound. At the Phase 5 → 6 handoff it goes through the degradation protocol (`reference/loop-engine.md`). In any other phase the same choice applies to the failing role: keep the open phase document `open`, then ask once — abort and resume (the default recommendation; the run stops as `aborted-at-<phase>` and resumes into that phase) or rebind the role by its fallback order, recorded with the reason and with step 4 below re-applied. No answer → checkpoint and stop.
 
 An empty capture from a reachable CLI is a **capture failure** first — one typed repair retry — never a task failure (`reference/contracts.md` §5).
 
@@ -70,8 +70,9 @@ An empty capture from a reachable CLI is a **capture failure** first — one typ
    | `judge` | claude → codex → agy |
    | `breadth` | agy → claude → codex |
 
-4. Apply the hard rules below. A rule that cannot be satisfied triggers the matching degradation row, recorded — never worked around.
-5. **Write the resolved roster into the Delivery Report before the first spawn.** A roster reported after the fact is a roster nobody could have objected to.
+4. **Keep `judge` off `build`'s CLI.** The orders above can land both on one CLI while another is reachable — codex absent puts both on claude; claude absent puts both on codex. Then rebind `judge` to the next CLI in its own order that is reachable and is not `build`'s, and record the rebinding. This runs at launch, so Phase 3, `scope-cutting` and the Risk Gate run on the separated roster, not only the loop.
+5. Apply the hard rules below. A rule that cannot be satisfied triggers the matching degradation row, recorded — never worked around.
+6. **Write the resolved roster into `RUN.md` before the first spawn**, and into the Delivery Report at exit. A roster recorded after the fact is a roster nobody could have objected to.
 
 ## Invocation Contract
 
@@ -134,7 +135,7 @@ When two engines are reachable and the third is *present but unusable* (auth, qu
 
 Cross-engine spawns are not fungible units. The run-level budget envelope carries a **per-engine sub-ledger**; a single total that mixes three pricing models cannot be read against any of them.
 
-Emitted in the Delivery Report before the first spawn, and again at exit with the actuals:
+Written to `RUN.md` before the first spawn, and into the Delivery Report at exit with the actuals:
 
 ```yaml
 engine_roster:

@@ -28,7 +28,7 @@ Then invoke it:
 feature-lifecycle <feature description>   # assess admission and explicit grant before Phase 1
 feature-lifecycle                         # bounded read-only proposal; no silent launch
 feature-lifecycle bootstrap               # explicit autonomous form (aliases: auto, goal=auto)
-feature-lifecycle resume                  # continue an aborted run from its last checkpoint
+feature-lifecycle resume [run-id]         # continue an aborted run from its last checkpoint
 ```
 
 Optional arguments: `scope=Lite|Standard|Full`, `ui=`, `api_change=`, `db_change=`, `budget=`.

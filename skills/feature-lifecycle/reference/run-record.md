@@ -113,7 +113,7 @@ produces: [artifacts/acceptance-criteria.md, artifacts/scope-boundary.md,
 ---
 ```
 
-- `engines` is a **list**, never a scalar. Four of the nine documents cover a phase whose rows run on more than one role — P3's three voices, P5's two tracks plus its gate axes, P6's mixed in-loop roster — and a scalar field silently records one of them as though it were all (`reference/engine-roster.md` § Phase → Role Map).
+- `engines` is a **list**, never a scalar. Five of the nine documents cover a phase whose rows run on more than one role — P0's `breadth` scan and hub synthesis, P3's three voices, P4's hub spec and `judge` scope-cutting, P5's two tracks plus its gate axes, P6's mixed in-loop roster — and a scalar field silently records one of them as though it were all (`reference/engine-roster.md` § Phase → Role Map).
 - `status: open` — the phase started and has not reached its gate. An `open` document at rest means the run stopped inside that phase.
 - `status: sealed` — the gate fired and its verdict is recorded below. Sealed documents are append-only (§ Write discipline).
 - `status: abandoned` — the phase was entered and then made moot, e.g. Phase 3 skipped after a Spec Handoff Packet arrived mid-run. Carries a one-line reason; never deleted.
@@ -241,7 +241,7 @@ An `open` document means that phase did not finish. Resume **re-enters that phas
 
 | Status | Meaning | Resumable |
 |--------|---------|-----------|
-| `running` | A phase document is `open` and the hub has not exited | Yes — found by a later invocation, it means the hub died without writing a stop; treat it as `aborted-at-<phase of the open document>` |
+| `running` | A phase document is `open` and the hub has not exited | Yes — found by a later invocation, it means the hub died without writing a stop; treat it as `aborted-at-<phase of the open document>`, or `aborted-at-<Next phase>` when the hub died between sealing one phase and opening the next. The record has one writer (§ Write discipline), so do not resume a record another live session is still writing |
 | `aborted-at-<P>` | Stopped at or inside phase `<P>` by the budget ceiling, the circuit breaker, a Risk-Gate No-Go the run stopped on rather than re-entered, an unanswered question (the 0e boundary confirm, an engine choice), or a user interrupt | Yes |
 | `blocked-at-<P>` | Stopped on a typed blocker only the user or an external party can clear — missing authority, missing required evidence, a spec-owner return, an acceptance failure past the re-entry cap awaiting the user's decision | Yes, once the blocker named in `Stopped because` is cleared |
 | `declined-at-P0` | The 0e boundary confirm was explicitly rejected; the record keeps the provisional id | No — a later `bootstrap` reads its `00-bootstrap.md` as prior evidence instead |
@@ -249,7 +249,7 @@ An `open` document means that phase did not finish. Resume **re-enters that phas
 | `superseded` | A later run shipped the same goal; awaiting prune (§ Retention) | No |
 | `closed` | The user ended the run without shipping it | No |
 
-A bare invocation surfaces only a **resumable** record (`SKILL.md` § Subcommand Dispatch). Any other status, or a value not in this table, is never offered as a checkpoint: a record nobody can resume, surfaced on every invocation, trains the user to dismiss the prompt that exists for the one that can be.
+`resume` takes an optional run id. Without one, a single resumable record is named and confirmed; several are listed for the user to pick from — never the most recent by default. A bare invocation likewise surfaces only a **resumable** record (`SKILL.md` § Subcommand Dispatch). Any other status, or a value not in this table, is never offered as a checkpoint: a record nobody can resume, surfaced on every invocation, trains the user to dismiss the prompt that exists for the one that can be.
 
 ## Run Record vs Journal vs Activity Log vs Delivery Report
 

@@ -22,7 +22,7 @@ Run the availability gate of `reference/contracts.md` §4 **before** selecting t
 
 | Path | Condition | Who owns the loop |
 |------|-----------|-------------------|
-| A project-local loop-runner skill | The workspace availability gate passes | It consumes the L3 ACs + mitigations + friction signals, authors the loop contract, generates the runner script set, and audits convergence |
+| A project-local loop-runner skill | The workspace availability gate passes | It consumes the L3 ACs + mitigations + friction signals + the measurement contract + required evidence + the declared cap, authors the loop contract, generates the runner script set, and audits convergence |
 | Fallback | No project-local installation | The chain drives the same bounded loop directly and owns the contract, convergence, and circuit-breaker duties. Record `project_local_fallback: true`; no repository-specific runner is generated |
 
 For the rest of this file, "the driver" means whichever of the two was selected. The **duties do not change** with the path — only who discharges them.
@@ -45,7 +45,7 @@ The Phase 5 → Phase 6 boundary is **both a phase boundary and an engine bounda
 | `component-catalog` | Component stories | Conditional: components added | `build` |
 | `code-review` | Per-iteration review of the cycle's diff | Yes | `judge` |
 | `test-authoring` | Unit / integration tests | Yes | `judge` |
-| `e2e-persona-tests` | E2E persona-driven tests (reuses the Phase 1 personas) | Conditional: UI flows | `breadth` |
+| `e2e-persona-tests` | E2E tests driven by the Phase 1 scenarios where they exist, otherwise by the L3 ACs' user flows | Conditional: UI flows | `breadth` |
 | `instrumentation` | Emit the events, counters, or spans the Phase 4 measurement contract needs to be readable | Conditional: the contract names a metric the codebase does not already emit | `build` |
 
 **`instrumentation` is what keeps autonomous mode from going blind.** When Phase 0 selected the goal from `metric-signal`, a feature shipped without the events behind its own measurement contract is invisible to the next Phase 0 scan — so each `feature-lifecycle bootstrap` run adds a surface the following run cannot see. The blind spot compounds silently, and it compounds fastest on exactly the features the loop was most confident about.
@@ -91,7 +91,7 @@ Hard-failing the handoff throws away five completed phases over a runner problem
 | **Abort & resume later** (default recommendation) | — | Phase 0-5 output is checkpointed; the run resumes at Phase 6 once the engine is reachable. The roster is unchanged, so the envelope still holds | The blocker is transient — config, auth, quota. Prefer this whenever the engine is *present but unusable* rather than absent |
 | **Claude Code** | `Agent(... run_in_background)`, or headless `claude -p … --output-format json` | **Iteration ceiling drops to `≤ 4`** (§ Termination Bounds) and the **budget envelope is recomputed** at Claude per-token rates before cycle 1. `judge` must rebind off Claude Code — to agy where reachable, otherwise the run drops to `engine_independence: context-only` and says so | The feature is small-to-medium and the run should finish now |
 | **agy** | `/agent`, or pty-wrapped `agy -p` (`reference/engine-roster.md`) | Every in-loop spawn runs on the Gemini mandate; long-context branches benefit, code-gen throughput is lower, so the **budget envelope** is recomputed upward at agy's rates while the ceiling stays `≤ 6` (§ Termination Bounds). `judge` stays on Claude Code — this is the cheapest degradation for independence | Long-context or multimodal-heavy implementation work |
-| **Proceed on one engine** | — (`build` stays on the hub) | Every role folds onto the hub, so `judge` cannot separate from `build`: the in-loop checker separation and the acceptance verification drop to context isolation and the run records `engine_independence: context-only`. The ceiling is whatever § Termination Bounds gives the hub engine; **no gate threshold moves** | The workspace ships one CLI at all. The chain is standalone by design, and blocking here would trade a recorded degradation for no run — offer it only when no second CLI can be reached, never as an escape from a transient blocker |
+| **Proceed on one engine** | — (`build` stays on the hub) | Every role folds onto the hub, so `judge` cannot separate from `build`: the in-loop checker separation and the acceptance verification drop to context isolation and the run records `engine_independence: context-only`. The ceiling is whatever § Termination Bounds gives the hub engine; **no gate threshold moves** | The workspace ships one CLI at all. The chain is standalone by design, and blocking here would trade a recorded degradation for no run — offer it only when the handoff check failed on some other condition and no second CLI can be reached, never as an escape from a transient blocker. A run that resolved to one CLI at launch does not enter this protocol for the `judge` ≠ `build` condition: § Engine Availability Check reports that collapse and proceeds |
 
 **Rules:**
 - The chosen engine and its restated envelope are recorded in the Delivery Report's *Loop iterations* row (`runner: codex | claude-code | agy`) alongside the `engine_roster` block, so a run's cost figures are never read against the wrong model.
@@ -117,7 +117,7 @@ A lower ceiling is not a penalty for a slower engine. Confusing the two produces
 
 | Loop | Bound | Exit reasons |
 |------|-------|--------------|
-| **Implementation loop** | Per the table above | `ACCEPT` · `diminishing-returns (Δ < ε)` · `cap-reached` · `BLOCK` |
+| **Implementation loop** | Per the table above | `ACCEPT` · `diminishing-returns (Δ < ε)`, with Δ's measure and ε declared in `loop-contract.md` before cycle 1 · `cap-reached` · `BLOCK` |
 | **Acceptance-gap loop** | `loop ≤ 2 re-entries total` (default N=2) — return to the first wrong decision; code gaps to Phase 6, then escalate | `ACCEPT` · `cap-reached` → user decision · `BLOCK` |
 
 On any non-`ACCEPT` exit, the Delivery Report states which acceptance criteria remain unmet and the residual gap. The chain never ships a silent partial.

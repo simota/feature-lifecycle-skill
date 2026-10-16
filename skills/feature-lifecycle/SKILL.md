@@ -109,7 +109,7 @@ Without that grant, allow only a bounded read-only proposal: no lifecycle spawns
 |------|------------------------------------------|
 | `INTERACTIVE` | Confirm or edit the goal and envelope |
 | `GUIDED` | Confirm or abort |
-| `AUTORUN` | Explicit approval; no answer → checkpoint and stop |
+| `AUTORUN` | Explicit approval; no answer → stop (a granted-discovery `bootstrap` checkpoints as `aborted-at-P0`) |
 | `AUTORUN_FULL` | Proceed within an explicit sufficient grant; otherwise request it once and stop without an answer |
 
 This authorizes launch, not a new approval per phase. Existing Ask First, risk, engine, circuit-breaker and budget boundaries remain. High-cost, outward-facing, destructive or cross-team actions outside the grant still need specific authority.
@@ -133,7 +133,7 @@ Parse the first token of user input.
 Behavior notes per Recipe:
 - `run`: Apply admission and authorization, then Phase 1 → 6 → Ship with the supplied goal bound as Phase 1 input. Optional args: `scope=Lite|Standard|Full`, `ui=`, `api_change=`, `db_change=`, `budget=`.
 - `bootstrap`: Within § Modes authority, Phase 0 proposes and selects `auto_selected_goal`; the `run` chain starts only after admission and launch authorization. `auto` and `goal=auto` are accepted aliases.
-- `resume`: read the last good phase checkpoint, re-bind its artifact, and continue from the next phase. Never restarts from Phase 1.
+- `resume [<run-id>]`: pick the record (`reference/run-record.md` § Run Status), read the last good phase checkpoint, re-bind its artifact, and continue from the next phase. Never restarts from Phase 1.
 
 ## Workflow
 
@@ -173,7 +173,7 @@ A role whose CLI **is** the hub uses the native spawn API; a role whose CLI is n
 
 | Hub | Engine | Roster | Cap |
 |-----|--------|--------|-----|
-| **Feature Lifecycle** (top) | hub, fanning out to all three roles | Phase 0-5 + Ship → `reference/phase-contracts.md` | ≤11 concurrent; phases serialise the rest, and the acceptance verification then `commit-and-pr` then `release-plan` run sequentially at the tail |
+| **Feature Lifecycle** (top) | hub, fanning out to all three roles | Phase 0-5 + Ship → `reference/phase-contracts.md` | ≤11 concurrent; phases serialise the rest, and the acceptance verification then `commit-and-pr`, `release-plan` and `rollback-rehearsal` run sequentially at the tail |
 | **UX** (sub, where installed) | `breadth` | The Phase 5 UX rows there | ≤9, parallelisable inside |
 | **Loop driver** (build sub, where installed) | `build` to implement, `judge` to check | In-loop → `reference/loop-engine.md` | ≤7 — the roster's rows excluding the driver. An eighth is a cap decision, not a roster edit |
 
@@ -183,7 +183,7 @@ Two tiers keep every hub at ≤11 with a real merge surface each. The chain adds
 
 | Gate | Fires at | Passing condition | On failure |
 |------|----------|-------------------|------------|
-| **Boundary confirm** | Before launch; P0 exit for discovery | Explicit grant per § Modes | Proposal/checkpoint and stop; an objection returns to the goal owner |
+| **Boundary confirm** | Before launch; P0 exit for discovery | Explicit grant per § Modes | Stop at the proposal (checkpointed only for granted discovery); an objection returns to the goal owner |
 | **Verdict gate** | Phase 3 exit | A non-split verdict with an AC seed and a scope boundary | 1-1-1 split → human verdict, then re-enter Phase 3 |
 | **Traceability gate** | Phase 4 exit | All required and decision-critical obligations traced; optional gaps explicit | P4 or upstream intent owner; no unilateral scope downgrade |
 | **Risk Gate** | Phase 5 exit | `blast_radius.verdict ∈ {Go, Conditional-Go} ∧ failure_modes.high_rpn_count == 0 ∧ friction.gate_pass ∧ security.unmitigated_high == 0` | No-Go → first wrong decision: P1 need, P4 spec, P5 design |
@@ -199,20 +199,17 @@ Two tiers keep every hub at ≤11 with a real merge surface each. The chain adds
 
 Loop and re-entry bounds are § Core Contract's, with the per-engine ceiling and exit reasons in `reference/loop-engine.md` § Termination Bounds; past the re-entry cap the user decides. On any non-`ACCEPT` exit the Delivery Report states which acceptance criteria remain unmet and the residual gap — never a silent partial.
 
-Cost runs 11-13 agents (Lite) / 17-22 (Standard) / 23-30 (Full), plus 4-8 for Phase 0, plus loop iterations — 27-61 spawns at the Full autonomous profile. The chain is not free; the run-level budget envelope, the loop's cost-per-task breaker, and the Ask First gates are what bound it → `reference/delivery-report.md` § Cost Profile. For repeated similar requests, propose a project-local skill to amortise the chain design cost instead of re-running the chain.
+Cost runs 16-23 agents (Lite) / 23-34 (Standard) / 27-35 (Full), plus 3-8 for Phase 0, plus loop cycles — 32-80 spawns at the Full autonomous profile, derived from the rosters. The chain is not free; the run-level budget envelope, the loop's cost-per-task breaker, and the Ask First gates are what bound it → `reference/delivery-report.md` § Cost Profile. For repeated similar requests, propose a project-local skill to amortise the chain design cost instead of re-running the chain.
 
 ## Gotchas
 
-- **A loop that converges is not a loop that is correct.** It can stop on an implementation that passes its own tests and misses the spec entirely. Gate Ship on the independent acceptance verification, never on the loop's exit reason.
 - **Conformance alone is a one-sided test.** An implementation can satisfy every AC *and* have grown a surface, dependency or table nobody specified — from inside a loop, "add a little more" always looks like progress. The negative pass is what makes the scope boundary load-bearing.
 - **An upstream packet collapses derivation, not verification.** Arriving from `spec` makes Phases 1-4 validation; it does not lighten the Risk Gate or the verification. The two common wastes are re-running discovery over a settled spec, and reading the packet as a gate exemption.
 - **Engine diversity is not evidence diversity.** Distinguish model, context, evidence and oracle independence; shared premises remain shared even with three votes. Name what each check independently tested. Fewer engines → report simulated voices, never invent independence.
 - **Every gate points forward.** Four risk axes and a two-sided verification stand between the run and a merge; until the rollback is rehearsed, nothing stands between it and a bad merge it cannot undo.
 - **Conformance is not product value.** Verification checks intent, spec and implementation, not population demand or eventual outcomes. The measurement contract remains open.
-- **A silent runner swap invalidates the run's cost figures.** Ceilings and envelopes are scored against one named engine. Surface the choice with a restated model and record the runner — a fallback nobody was told about produces numbers read against the wrong model.
 - **Hard-failing the Phase 5 → 6 handoff throws away five completed phases.** The abort option is a *checkpointed* resume at Phase 6, not a restart.
 - **A clone's declared parity ceiling is a constraint, not a defect.** A loop given a parity harness will happily "fix" a ceiling-bound behavior and move the product off its baseline. Ceilings are inputs to the loop contract.
-- **Phase 1 on an existing repo means a reuse scan first.** A second implementation of something the repo already ships is discovered in Phase 1 for the cost of a scan, or in Phase 6 for the cost of the whole loop.
 
 ## Lifecycle
 
@@ -239,7 +236,7 @@ The chain receives a goal, or an upstream handoff packet. It sends a UX brief to
 | Spec authoring → Feature Lifecycle | `SPEC_HANDOFF_PACKET` | ACs, non-goals, assumption ledger, refutation flags, reuse findings |
 | Faithful reproduction → Feature Lifecycle | `CLONE_HANDOFF_PACKET` | Stack decision record, parity ceilings, parity harness, coverage gaps |
 | Feature Lifecycle → UX track | `FEATURE_LIFECYCLE_TO_UX` | Creative direction brief + the UX slice of the spec |
-| Feature Lifecycle → Loop driver | `FEATURE_LIFECYCLE_TO_LOOP` | Loop contract: L3 ACs + mitigations + friction signals + the declared cap |
+| Feature Lifecycle → Loop driver | `FEATURE_LIFECYCLE_TO_LOOP` | Loop contract: L3 ACs + mitigations + friction signals + measurement contract + required evidence + the declared cap |
 | Feature Lifecycle → Acceptance verification | `FEATURE_LIFECYCLE_TO_VERIFY` | Authorized intent + changes, ACs, scope, oracle sources and required evidence |
 | Feature Lifecycle → Performance tuning | `FEATURE_LIFECYCLE_TO_PERF` | A perf AC left unmet inside the envelope, with its target and budget |
 | Feature Lifecycle → User | `FEATURE_LIFECYCLE_COMPLETE` | Delivery Report + ship status |
@@ -297,7 +294,7 @@ _STEP_COMPLETE:
     artifact_type: "feature-lifecycle-run"
     parameters:
       goal: "[the feature shipped or attempted]"
-      phases_run: "[e.g. 0-6 + Ship, or 4-6 when a spec packet collapsed 1-3]"
+      phases_run: "[e.g. 0-6 + Ship, or 1-2 + 4-6 + Ship with a spec packet: 1, 2 and 4 as validation, 3 skipped]"
       runner: "codex | claude-code | agy"
       engine_roster: "build/judge/breadth CLIs, engine_independence: model | context-only"
       risk_gate: "Go | Conditional-Go | No-Go (four axes)"
