@@ -1,0 +1,21 @@
+# The same gate the pre-commit hook runs, for every push and PR: the hook is opt-in
+# (`make hooks`), so without this nothing stops a PR that never ran it.
+name: check
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # lint + selftest: the skill's static contract, and proof each check can fail
+      - run: make check
+      # the frozen adversarial corpus and its grader; runs no model
+      - run: make eval

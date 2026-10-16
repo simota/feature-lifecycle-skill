@@ -114,6 +114,10 @@ make hooks       # install the pre-commit hook — lints the staged content
                  # (lint always; selftest when tools/ changed; eval when tests/adversarial/ changed)
 ```
 
+CI (`.github/workflows/check.yml`) runs `make check` and `make eval` on every push to
+`main` and every pull request, so the gate holds whether or not a contributor installed
+the hook.
+
 `tools/lint.py` checks frontmatter, the capability markers, the required section
 headings, size tiers, that every `§ <section>` citation names a heading that exists (L4),
 that this README's paths into the skill exist (L2), and — the one that matters for a repository like this —
