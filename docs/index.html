@@ -272,7 +272,7 @@ a:focus-visible{outline:2px solid var(--gate);outline-offset:2px}
     <div class="fact"><b>11</b><span>gates</span></div>
     <div class="fact"><b>3</b><span>engine roles</span></div>
     <div class="fact"><b>≤ 6</b><span>loop cycles</span></div>
-    <div class="fact"><b>16–44</b><span>agents / run + loop cycles</span></div>
+    <div class="fact"><b>16–45</b><span>agents / run + loop cycles</span></div>
     <div class="fact"><b>Explicit</b><span>launch authority</span></div>
   </div>
 </header>
@@ -516,7 +516,7 @@ db_change=  budget=</pre>
       <button type="button" data-p="full" aria-pressed="false">Full</button>
     </div>
     <label class="switch"><input type="checkbox" id="bootChk"> Autonomous mode (include Phase 0)</label>
-    <span class="readout" aria-live="polite">est. agents <b id="agentCount">23–36</b> · <span id="profNote">all phases active</span></span>
+    <span class="readout" aria-live="polite">est. agents <b id="agentCount">23–37</b> · <span id="profNote">all phases active</span></span>
   </div>
 
   <div class="phases" id="phaseList">
@@ -1095,14 +1095,14 @@ artifacts/
         <table>
           <thead><tr><th>Profile</th><th class="num-c">Agents</th><th>Cost</th></tr></thead>
           <tbody>
-            <tr><td>Lite — no UI, spec scope Lite</td><td class="num-c">16–23</td><td>Low</td></tr>
-            <tr><td>Standard — UI, spec scope Standard</td><td class="num-c">23–36</td><td>Medium</td></tr>
-            <tr><td>Full — greenfield, spec scope Full</td><td class="num-c">27–35</td><td>High</td></tr>
+            <tr><td>Lite — no UI, spec scope Lite</td><td class="num-c">16–24</td><td>Low</td></tr>
+            <tr><td>Standard — UI, spec scope Standard</td><td class="num-c">23–37</td><td>Medium</td></tr>
+            <tr><td>Full — greenfield, spec scope Full</td><td class="num-c">27–36</td><td>High</td></tr>
             <tr><td>+ autonomous bootstrap (Phase 0)</td><td class="num-c">+3–8</td><td>+10–20%</td></tr>
           </tbody>
         </table>
       </div>
-      <p class="sec-note" style="margin-top:14px">Counts are one agent per roster row that runs, with one loop cycle, derived from the rosters rather than measured. Counting the three deliberation voices and up to five further loop cycles, that is <strong>32–80 spawns</strong> at the Full autonomous profile. For repeated similar requests, propose a project-local skill to amortise the chain design cost instead of re-running the chain.</p>
+      <p class="sec-note" style="margin-top:14px">Counts are one agent per roster row that runs, with one loop cycle, derived from the rosters rather than measured. Counting the three deliberation voices and up to five further loop cycles, that is <strong>32–81 spawns</strong> at the Full autonomous profile. For repeated similar requests, propose a project-local skill to amortise the chain design cost instead of re-running the chain.</p>
     </div>
     <div>
       <h3 style="margin-top:0">The budget envelope</h3>
@@ -1145,11 +1145,11 @@ artifacts/
 <script>
 (function () {
   var PROFILES = {
-    lite:     { count: "16–23", note: "no UI · UX track idle · spec scope Lite" },
-    standard: { count: "23–36", note: "all phases active" },
-    full:     { count: "27–35", note: "+ scope-cutting / formal-spec / design-file-extraction / i18n" }
+    lite:     { count: "16–24", note: "no UI · UX track idle · spec scope Lite" },
+    standard: { count: "23–37", note: "all phases active" },
+    full:     { count: "27–36", note: "+ scope-cutting / formal-spec / design-file-extraction / i18n" }
   };
-  var BOOT = { lite: "19–31", standard: "26–44", full: "30–43" };
+  var BOOT = { lite: "19–32", standard: "26–45", full: "30–44" };
 
   var seg = document.getElementById("segProfile");
   var buttons = seg.querySelectorAll("button");
