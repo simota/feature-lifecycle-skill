@@ -59,7 +59,11 @@ def matrix(cases: list[dict[str, Any]], values: dict[str, bool]) -> dict[str,int
     return out
 
 def score(cases: list[dict[str, Any]], observations: list[dict[str, Any]]) -> dict[str,Any]:
-    by_id = {o.get('id'):o for o in observations}
+    # Malformed input is a named schema error, never a traceback: the grader's contract is
+    # that every rejection carries an EVAL_* name a runner can act on.
+    if any(not isinstance(o, dict) or not isinstance(o.get('id'), str) for o in observations):
+        raise EvaluationError('EVAL_SCHEMA: each observation must be a JSON object with a string id')
+    by_id = {o['id']:o for o in observations}
     if len(by_id) != len(observations) or set(by_id) != {c['id'] for c in cases}:
         raise EvaluationError('EVAL_IDS: observations must contain each request exactly once')
     failures=[]
@@ -71,6 +75,10 @@ def score(cases: list[dict[str, Any]], observations: list[dict[str, Any]]) -> di
             raise EvaluationError('EVAL_PROVENANCE: engine execution needs engine/model/version/artifact; existence and truth still require review')
         if not isinstance(o.get('heavy_eligible'), bool) or o.get('path') not in PATHS:
             raise EvaluationError('EVAL_SCHEMA: observation must name path and Boolean eligibility')
+        # A count, so `false` and `0.0` are not 0: Python's False == 0 would let them pass EVAL_AUTH.
+        approvals = o.get('extra_routine_approvals')
+        if approvals is not None and (type(approvals) is not int or approvals < 0):
+            raise EvaluationError('EVAL_SCHEMA: extra_routine_approvals must be a non-negative integer or null')
         if o['heavy_eligible'] != c['expected_heavy'] or o['path'] != c['expected_path']:
             failures.append({'rule':'EVAL_ROUTE','id':c['id'],'expected':c['expected_path'],'got':o['path']})
         if c['id'] in {'R73','R74','R76'} and o.get('launch') not in {'proposal-only','not-lifecycle'}:
@@ -107,6 +115,8 @@ def selftest(cases: list[dict[str,Any]]) -> None:
     require(not score(cases,obs)['failures'],'constructed all-matching fixture must score clean')
     bad=copy.deepcopy(obs);bad[0].pop('method');broken('EVAL_PROVENANCE',lambda:score(cases,bad))
     bad=copy.deepcopy(obs);bad[0].update(method='engine-execution');broken('EVAL_PROVENANCE',lambda:score(cases,bad))
+    bad=copy.deepcopy(obs);bad[0]=[bad[0]['id']];broken('EVAL_SCHEMA',lambda:score(cases,bad))
+    bad=copy.deepcopy(obs);next(o for o in bad if o['id']=='R75')['extra_routine_approvals']=False;broken('EVAL_SCHEMA',lambda:score(cases,bad))
     for rid,field,value,rule in [('R09','heavy_eligible',False,'EVAL_ROUTE'),('R73','launch','execute','EVAL_AUTH'),('R75','extra_routine_approvals',1,'EVAL_AUTH')]:
         bad=copy.deepcopy(obs);next(o for o in bad if o['id']==rid)[field]=value
         require(any(f['rule']==rule and f['id']==rid for f in score(cases,bad)['failures']),f'{rule}: {rid} mutation not named')
