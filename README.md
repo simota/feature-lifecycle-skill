@@ -115,7 +115,8 @@ make hooks       # install the pre-commit hook — lints the staged content
 ```
 
 `tools/lint.py` checks frontmatter, the capability markers, the required section
-headings, size tiers, that every `§ <section>` citation names a heading that exists (L4), and — the one that matters for a repository like this —
+headings, size tiers, that every `§ <section>` citation names a heading that exists (L4),
+that this README's paths into the skill exist (L2), and — the one that matters for a repository like this —
 **the standalone invariant (L1)**: no file may reference a `_common/` contract
 path. The chain was extracted from a repository where that directory sat beside every
 skill; here there is none, so such a path renders fine to a human browsing the

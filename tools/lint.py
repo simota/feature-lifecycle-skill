@@ -24,7 +24,8 @@ checked mechanically rather than remembered.
   ST1 required section headings present, outside code fences
   L1  no `_common/<path>` reference anywhere, at any depth, extension or not —
       the standalone invariant
-  L2  every `reference/<file>.md` cited by any file in the skill resolves on disk
+  L2  every `reference/<file>.md` cited by any file in the skill resolves on disk, and
+      every `skills/<name>/…` path the repo-root README.md names exists
   L3  every file under `reference/` is cited by at least one *other* file
   L4  every `§ <section>` citation — `reference/x.md` § Heading, `SKILL.md` § Heading,
       a bare § Heading in its own file, or a numbered `§N` — names a heading that
@@ -196,7 +197,8 @@ def headings(text: str) -> list[str]:
                 fence = ""
                 continue
         if not fence:
-            m = re.match(r"^#{1,6}\s+(.+?)\s*#*\s*$", line)
+            # A closing `#` run counts only after a space: `## Use C#` is "Use C#".
+            m = re.match(r"^#{1,6}\s+(.+?)(?:\s+#+)?\s*$", line)
             if m:
                 found.append(m.group(1))
     return found
@@ -392,6 +394,17 @@ def lint_links(skill_dir: Path, out: list[Finding]) -> None:
                     out.append(Finding("P1", "L2", f"{rel(path)}:{lineno}",
                                        f"references `{match}`, which does not exist"))
 
+    # L2 — the README is where a reader is told which reference file holds what, and a
+    # rename inside the skill leaves it pointing at nothing with no other check noticing.
+    readme = REPO_ROOT / "README.md"
+    if readme.is_file():
+        prefix = f"skills/{skill_dir.name}/"
+        for lineno, line in enumerate(readme.read_text(encoding="utf-8").splitlines(), 1):
+            for match in re.findall(rf"{re.escape(prefix)}[A-Za-z0-9_./-]*[A-Za-z0-9_/-]", line):
+                if not (REPO_ROOT / match).exists():
+                    out.append(Finding("P1", "L2", f"README.md:{lineno}",
+                                       f"names `{match}`, which does not exist"))
+
     # L3
     ref_dir = skill_dir / "reference"
     if ref_dir.is_dir():
@@ -447,6 +460,15 @@ def _edit(rel: str, transform):
         path.write_text(after, encoding="utf-8")
         return True
     return apply
+
+
+def _break_root_readme_path(skill: Path) -> bool:
+    readme = skill.parents[1] / "README.md"
+    before = readme.read_text(encoding="utf-8")
+    after = before.replace("skills/feature-lifecycle/reference/run-record.md",
+                           "skills/feature-lifecycle/reference/run-records.md", 1)
+    readme.write_text(after, encoding="utf-8")
+    return after != before
 
 
 def _add_readme(skill: Path) -> bool:
@@ -510,12 +532,16 @@ MUTATIONS = [
      _edit("SKILL.md", lambda s: s.replace("\n## Core Contract\n", "\n## Contract\n", 1))),
     ("ST1", "ignores a required heading that only survives inside a code fence",
      _edit("SKILL.md", lambda s: s.replace("\n## Core Contract\n", "\n```\n## Core Contract\n```\n", 1))),
+    ("L4", "keeps a heading's own trailing # (`C#`), so `§ … C` does not resolve to it",
+     _edit("SKILL.md", lambda s: s.replace("(§ Orchestrator Sub-Mode)", "(§ Orchestrator Sub-Mode C)", 1)
+           .replace("\n## Orchestrator Sub-Mode\n", "\n## Orchestrator Sub-Mode C#\n", 1))),
     ("ST1", "ignores a required heading inside a tilde fence",
      _edit("SKILL.md", lambda s: s.replace("\n## Core Contract\n", "\n~~~\n## Core Contract\n~~~\n", 1))),
     ("L1", "catches a reintroduced _common path",
      _edit("SKILL.md", lambda s: s.replace("\n## Workflow\n", "\nSee `_common/OPERATIONAL.md`.\n\n## Workflow\n", 1))),
     ("L2", "catches a dead reference link",
      _edit("SKILL.md", lambda s: s.replace("`reference/loop-engine.md`", "`reference/loop-engin.md`", 1))),
+    ("L2", "catches a repo README path into the skill that no longer exists", _break_root_readme_path),
     ("L4", "catches a section citation whose heading was renamed",
      _edit("reference/loop-engine.md", lambda s: s.replace("\n## Termination Bounds\n", "\n## Loop Bounds\n", 1))),
     ("L4", "catches a numbered citation past the last section",
