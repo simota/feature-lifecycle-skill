@@ -199,7 +199,7 @@ Two tiers keep every hub at ≤11 with a real merge surface each. The chain adds
 
 Loop and re-entry bounds are § Core Contract's, with the per-engine ceiling and exit reasons in `reference/loop-engine.md` § Termination Bounds; past the re-entry cap the user decides. On any non-`ACCEPT` exit the Delivery Report states which acceptance criteria remain unmet and the residual gap — never a silent partial.
 
-Cost runs 16-23 agents (Lite) / 23-34 (Standard) / 27-35 (Full), plus 3-8 for Phase 0, plus loop cycles — 32-80 spawns at the Full autonomous profile, derived from the rosters. The chain is not free; the run-level budget envelope, the loop's cost-per-task breaker, and the Ask First gates are what bound it → `reference/delivery-report.md` § Cost Profile. For repeated similar requests, propose a project-local skill to amortise the chain design cost instead of re-running the chain.
+Cost runs 16-23 agents (Lite) / 23-36 (Standard) / 27-35 (Full), plus 3-8 for Phase 0, plus loop cycles — 32-80 spawns at the Full autonomous profile, derived from the rosters. The chain is not free; the run-level budget envelope, the loop's cost-per-task breaker, and the Ask First gates are what bound it → `reference/delivery-report.md` § Cost Profile. For repeated similar requests, propose a project-local skill to amortise the chain design cost instead of re-running the chain.
 
 ## Gotchas
 

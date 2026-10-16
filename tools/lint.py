@@ -25,7 +25,8 @@ checked mechanically rather than remembered.
   L1  no `_common/<path>` reference anywhere, at any depth, extension or not —
       the standalone invariant
   L2  every `reference/<file>.md` cited by any file in the skill resolves on disk, and
-      every `skills/<name>/…` path the repo-root README.md names exists
+      every `skills/<name>/…` or bare `reference/<file>.md` path the repo-root
+      README.md names exists
   L3  every file under `reference/` is cited by at least one *other* file
   L4  every `§ <section>` citation — `reference/x.md` § Heading, `SKILL.md` § Heading,
       a bare § Heading in its own file, or a numbered `§N` — names a heading that
@@ -404,6 +405,11 @@ def lint_links(skill_dir: Path, out: list[Finding]) -> None:
                 if not (REPO_ROOT / match).exists():
                     out.append(Finding("P1", "L2", f"README.md:{lineno}",
                                        f"names `{match}`, which does not exist"))
+            # The layout table names files relative to the skill: `reference/x.md`.
+            for match in REFERENCE_PATH_RE.findall(line.replace(prefix, "")):
+                if not (skill_dir / match).is_file():
+                    out.append(Finding("P1", "L2", f"README.md:{lineno}",
+                                       f"names `{match}`, which is not a file in the skill"))
 
     # L3
     ref_dir = skill_dir / "reference"
@@ -467,6 +473,14 @@ def _break_root_readme_path(skill: Path) -> bool:
     before = readme.read_text(encoding="utf-8")
     after = before.replace("skills/feature-lifecycle/reference/run-record.md",
                            "skills/feature-lifecycle/reference/run-records.md", 1)
+    readme.write_text(after, encoding="utf-8")
+    return after != before
+
+
+def _break_readme_layout_row(skill: Path) -> bool:
+    readme = skill.parents[1] / "README.md"
+    before = readme.read_text(encoding="utf-8")
+    after = before.replace("| `reference/input-contracts.md` |", "| `reference/input-contract.md` |", 1)
     readme.write_text(after, encoding="utf-8")
     return after != before
 
@@ -542,6 +556,7 @@ MUTATIONS = [
     ("L2", "catches a dead reference link",
      _edit("SKILL.md", lambda s: s.replace("`reference/loop-engine.md`", "`reference/loop-engin.md`", 1))),
     ("L2", "catches a repo README path into the skill that no longer exists", _break_root_readme_path),
+    ("L2", "catches a README layout-table entry that no longer exists", _break_readme_layout_row),
     ("L4", "catches a section citation whose heading was renamed",
      _edit("reference/loop-engine.md", lambda s: s.replace("\n## Termination Bounds\n", "\n## Loop Bounds\n", 1))),
     ("L4", "catches a numbered citation past the last section",

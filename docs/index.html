@@ -272,7 +272,7 @@ a:focus-visible{outline:2px solid var(--gate);outline-offset:2px}
     <div class="fact"><b>11</b><span>gates</span></div>
     <div class="fact"><b>3</b><span>engine roles</span></div>
     <div class="fact"><b>≤ 6</b><span>loop cycles</span></div>
-    <div class="fact"><b>16–43</b><span>agents / run + loop cycles</span></div>
+    <div class="fact"><b>16–44</b><span>agents / run + loop cycles</span></div>
     <div class="fact"><b>Explicit</b><span>launch authority</span></div>
   </div>
 </header>
@@ -516,7 +516,7 @@ db_change=  budget=</pre>
       <button type="button" data-p="full" aria-pressed="false">Full</button>
     </div>
     <label class="switch"><input type="checkbox" id="bootChk"> Autonomous mode (include Phase 0)</label>
-    <span class="readout" aria-live="polite">est. agents <b id="agentCount">23–34</b> · <span id="profNote">all phases active</span></span>
+    <span class="readout" aria-live="polite">est. agents <b id="agentCount">23–36</b> · <span id="profNote">all phases active</span></span>
   </div>
 
   <div class="phases" id="phaseList">
@@ -627,10 +627,10 @@ db_change=  budget=</pre>
           <li data-only="standard full">interaction-design</li>
           <li data-only="standard full">microcopy</li>
           <li data-req="cond" data-only="standard full">motion-spec<span class="q">?</span></li>
-          <li data-req="cond" data-only="full">design-file-extraction<span class="q">?</span></li>
+          <li data-req="cond">design-file-extraction<span class="q">?</span></li>
           <li data-only="standard full">prototype</li>
           <li data-only="standard full">friction-walkthrough</li>
-          <li data-req="cond" data-only="full">i18n-strategy<span class="q">?</span></li>
+          <li data-req="cond">i18n-strategy<span class="q">?</span></li>
           <li data-req="cond" data-only="standard full">mockup-to-code<span class="q">?</span></li>
         </ul>
       </div>
@@ -892,7 +892,7 @@ db_change=  budget=</pre>
     <li data-n="05"><b>Degradation changes who runs a gate, never whether it passes.</b> No threshold moves because an engine was missing.</li>
   </ol>
 
-  <div class="callout"><b>"Present but unusable" is not "absent".</b> A binary that answers but whose role spawn fails on auth, quota or config is a <em>transient</em> blocker. It is surfaced through the degradation protocol's <strong>abort-and-resume</strong> option — Phase 0–5 output is already checkpointed — not silently rebound. A blocker resolved in ten minutes is cheaper than a run scored against the wrong roster.</div>
+  <div class="callout"><b>"Present but unusable" is not "absent".</b> A binary that answers but whose role spawn fails on auth, quota or config is a <em>transient</em> blocker. At the Phase 5 → 6 handoff it goes through the degradation protocol; in any other phase the open phase stays open and the user is asked once: <strong>abort and resume</strong> into that phase (the default), or a recorded rebind of the failing role. Never silently rebound. A blocker resolved in ten minutes is cheaper than a run scored against the wrong roster.</div>
 
   <h3>Headless invocation — the silent-output traps</h3>
   <div class="tw">
@@ -1096,7 +1096,7 @@ artifacts/
           <thead><tr><th>Profile</th><th class="num-c">Agents</th><th>Cost</th></tr></thead>
           <tbody>
             <tr><td>Lite — no UI, spec scope Lite</td><td class="num-c">16–23</td><td>Low</td></tr>
-            <tr><td>Standard — UI, spec scope Standard</td><td class="num-c">23–34</td><td>Medium</td></tr>
+            <tr><td>Standard — UI, spec scope Standard</td><td class="num-c">23–36</td><td>Medium</td></tr>
             <tr><td>Full — greenfield, spec scope Full</td><td class="num-c">27–35</td><td>High</td></tr>
             <tr><td>+ autonomous bootstrap (Phase 0)</td><td class="num-c">+3–8</td><td>+10–20%</td></tr>
           </tbody>
@@ -1146,10 +1146,10 @@ artifacts/
 (function () {
   var PROFILES = {
     lite:     { count: "16–23", note: "no UI · UX track idle · spec scope Lite" },
-    standard: { count: "23–34", note: "all phases active" },
+    standard: { count: "23–36", note: "all phases active" },
     full:     { count: "27–35", note: "+ scope-cutting / formal-spec / design-file-extraction / i18n" }
   };
-  var BOOT = { lite: "19–31", standard: "26–42", full: "30–43" };
+  var BOOT = { lite: "19–31", standard: "26–44", full: "30–43" };
 
   var seg = document.getElementById("segProfile");
   var buttons = seg.querySelectorAll("button");

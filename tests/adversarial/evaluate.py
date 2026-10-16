@@ -61,8 +61,10 @@ def matrix(cases: list[dict[str, Any]], values: dict[str, bool]) -> dict[str,int
 def score(cases: list[dict[str, Any]], observations: list[dict[str, Any]]) -> dict[str,Any]:
     # Malformed input is a named schema error, never a traceback: the grader's contract is
     # that every rejection carries an EVAL_* name a runner can act on.
-    if any(not isinstance(o, dict) or not isinstance(o.get('id'), str) for o in observations):
-        raise EvaluationError('EVAL_SCHEMA: each observation must be a JSON object with a string id')
+    if any(not isinstance(o, dict) or not isinstance(o.get('id'), str)
+           or any(not isinstance(o.get(k), (str, type(None))) for k in ('method', 'path', 'launch'))
+           for o in observations):
+        raise EvaluationError('EVAL_SCHEMA: each observation must be a JSON object with a string id, and string method/path/launch')
     by_id = {o['id']:o for o in observations}
     if len(by_id) != len(observations) or set(by_id) != {c['id'] for c in cases}:
         raise EvaluationError('EVAL_IDS: observations must contain each request exactly once')
@@ -117,6 +119,7 @@ def selftest(cases: list[dict[str,Any]]) -> None:
     bad=copy.deepcopy(obs);bad[0].update(method='engine-execution');broken('EVAL_PROVENANCE',lambda:score(cases,bad))
     bad=copy.deepcopy(obs);bad[0]=[bad[0]['id']];broken('EVAL_SCHEMA',lambda:score(cases,bad))
     bad=copy.deepcopy(obs);next(o for o in bad if o['id']=='R75')['extra_routine_approvals']=False;broken('EVAL_SCHEMA',lambda:score(cases,bad))
+    bad=copy.deepcopy(obs);bad[0]['path']=['coding'];broken('EVAL_SCHEMA',lambda:score(cases,bad))
     for rid,field,value,rule in [('R09','heavy_eligible',False,'EVAL_ROUTE'),('R73','launch','execute','EVAL_AUTH'),('R75','extra_routine_approvals',1,'EVAL_AUTH')]:
         bad=copy.deepcopy(obs);next(o for o in bad if o['id']==rid)[field]=value
         require(any(f['rule']==rule and f['id']==rid for f in score(cases,bad)['failures']),f'{rule}: {rid} mutation not named')
