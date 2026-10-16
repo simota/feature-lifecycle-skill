@@ -85,7 +85,7 @@ The chain prefers a project-local loop runner when the workspace ships one, and 
 | Step | Check | Outcome |
 |------|-------|---------|
 | 1 | Does the workspace expose a loop-runner skill (under `.claude/skills/`, `.agents/skills/`, or the CLI's own skills root)? | No → fallback path |
-| 2 | Does it declare the contracts the chain hands it — L3 ACs, mitigations, friction signals, a declared cap? | No → fallback path |
+| 2 | Does it declare the contracts the chain hands it — L3 ACs, mitigations, friction signals, the measurement contract, required evidence, a declared cap? | No → fallback path |
 | 3 | Is its runner reachable from this session? | No → fallback path |
 
 **Fallback path:** the chain drives the same bounded loop directly and owns the contract, convergence detection, cost tracking, and circuit-breaker duties itself. Record `project_local_fallback: true` in the Delivery Report. No repository-specific runner is generated.

@@ -19,7 +19,7 @@ Two things follow, and both are load-bearing:
 
 ## Delegation Table
 
-Names are those of the `agent-skills` ecosystem this skill was extracted from. Treat them as *candidate* names: a workspace that ships a differently-named skill for the same work is matched on the work, not the string. A row marked **no candidate claimed** is one the chain has no known specialist for — it is not a gap in the row, only in this table, and the chain performs it as it performs any undelegated row.
+Names are those of the `agent-skills` ecosystem this skill was extracted from. They are skill names, not engine roles: the skill `judge` preferred for `code-review` is unrelated to the `judge` engine role of `reference/engine-roster.md`. Treat them as *candidate* names: a workspace that ships a differently-named skill for the same work is matched on the work, not the string. A row marked **no candidate claimed** is one the chain has no known specialist for — it is not a gap in the row, only in this table, and the chain performs it as it performs any undelegated row.
 
 | Phase | Work role | Prefers, if installed | Its own fallback |
 |-------|-----------|----------------------|---------------------|
@@ -63,7 +63,7 @@ Names are those of the `agent-skills` ecosystem this skill was extracted from. T
 | 6 | `component-catalog` | `vitrine` | Author the component stories |
 | 6 | `code-review` | `judge` | Review the cycle's diff against the contract |
 | 6 | `test-authoring` | `radar` | Author unit and integration tests |
-| 6 | `e2e-persona-tests` | `voyager` | Author E2E flows from the Phase 1 personas |
+| 6 | `e2e-persona-tests` | `voyager` | Author E2E flows from the Phase 1 scenarios, or the L3 ACs' user flows where there are none |
 | 6 | `instrumentation` | — (no candidate claimed) | Emit the events, counters, or spans the measurement contract names |
 | Verify | `acceptance-verification` | `attest` | Run both passes directly — always on the `judge` engine |
 | Ship | `commit-and-pr` | `guardian` | Apply `reference/contracts.md` §10 and open the PR |

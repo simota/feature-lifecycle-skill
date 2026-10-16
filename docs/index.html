@@ -272,7 +272,7 @@ a:focus-visible{outline:2px solid var(--gate);outline-offset:2px}
     <div class="fact"><b>11</b><span>gates</span></div>
     <div class="fact"><b>3</b><span>engine roles</span></div>
     <div class="fact"><b>≤ 6</b><span>loop cycles</span></div>
-    <div class="fact"><b>11–61</b><span>spawns / run</span></div>
+    <div class="fact"><b>16–45</b><span>agents / run + loop cycles</span></div>
     <div class="fact"><b>Explicit</b><span>launch authority</span></div>
   </div>
 </header>
@@ -479,7 +479,7 @@ a:focus-visible{outline:2px solid var(--gate);outline-offset:2px}
       <pre>feature-lifecycle &lt;description&gt;  # admission + explicit grant → Phase 1
 feature-lifecycle                # bounded proposal; no silent launch
 feature-lifecycle bootstrap      # explicit form (aliases: auto, goal=auto)
-feature-lifecycle resume         # from the last checkpoint
+feature-lifecycle resume [id]    # from the last checkpoint
 
 # optional arguments
 scope=Lite|Standard|Full  ui=  api_change=
@@ -494,8 +494,8 @@ db_change=  budget=</pre>
           <tbody>
             <tr><td><code>INTERACTIVE</code></td><td>Confirm or edit the goal and envelope</td></tr>
             <tr><td><code>GUIDED</code></td><td>Confirm or abort</td></tr>
-            <tr><td><code>AUTORUN</code></td><td>Explicit approval; no answer → <strong>checkpoint and stop</strong></td></tr>
-            <tr><td><code>AUTORUN_FULL</code></td><td>Proceed within an explicit sufficient grant; otherwise request it once, checkpoint and stop without an answer. Silence is not consent. No timed objection window is assumed.</td></tr>
+            <tr><td><code>AUTORUN</code></td><td>Explicit approval; no answer → <strong>stop</strong> (a granted-discovery <code>bootstrap</code> checkpoints as <code>aborted-at-P0</code>)</td></tr>
+            <tr><td><code>AUTORUN_FULL</code></td><td>Proceed within an explicit sufficient grant; otherwise request it once and stop without an answer. Silence is not consent. No timed objection window is assumed.</td></tr>
           </tbody>
         </table>
       </div>
@@ -516,7 +516,7 @@ db_change=  budget=</pre>
       <button type="button" data-p="full" aria-pressed="false">Full</button>
     </div>
     <label class="switch"><input type="checkbox" id="bootChk"> Autonomous mode (include Phase 0)</label>
-    <span class="readout" aria-live="polite">est. agents <b id="agentCount">17–22</b> · <span id="profNote">all phases active</span></span>
+    <span class="readout" aria-live="polite">est. agents <b id="agentCount">23–37</b> · <span id="profNote">all phases active</span></span>
   </div>
 
   <div class="phases" id="phaseList">
@@ -580,7 +580,7 @@ db_change=  budget=</pre>
       <div class="pc-id"><span class="k">P3</span><span class="role">tri-engine</span></div>
       <div class="pc-body">
         <h3>Verdict — three voices, three engines</h3>
-        <p class="focus"><code>logic</code> — does the option hold up on its own terms: assumptions, failure modes, internal contradictions? <code>human-impact</code> — who does it help, who does it cost, what does the persona set actually do with it? <code>precedent</code> — what have comparable systems already learned about this shape? <strong>One voice per engine.</strong> Distinct engines may still share one premise; each verdict names the evidence and oracle it actually challenged. Skipped entirely when a Spec Handoff Packet supplied the direction.</p>
+        <p class="focus"><code>logic</code> — does the option hold up on its own terms: assumptions, failure modes, internal contradictions? <code>human-impact</code> — who does it help, who does it cost, what would the affected actors actually do with it, from the Phase 1 evidence? <code>precedent</code> — what have comparable systems already learned about this shape? <strong>One voice per engine.</strong> Distinct engines may still share one premise; each verdict names the evidence and oracle it actually challenged. Skipped entirely when a Spec Handoff Packet supplied the direction.</p>
         <ul class="rows"><li>deliberation</li></ul>
       </div>
       <div class="pc-gate">
@@ -598,7 +598,7 @@ db_change=  budget=</pre>
         <ul class="rows">
           <li>spec-authoring</li>
           <li data-req="cond" data-only="full">scope-cutting<span class="q">?</span></li>
-          <li data-req="cond" data-only="full">formal-spec<span class="q">?</span></li>
+          <li data-req="cond">formal-spec<span class="q">?</span></li>
           <li>measurement-contract</li>
         </ul>
       </div>
@@ -627,10 +627,10 @@ db_change=  budget=</pre>
           <li data-only="standard full">interaction-design</li>
           <li data-only="standard full">microcopy</li>
           <li data-req="cond" data-only="standard full">motion-spec<span class="q">?</span></li>
-          <li data-req="cond" data-only="full">design-file-extraction<span class="q">?</span></li>
+          <li data-req="cond">design-file-extraction<span class="q">?</span></li>
           <li data-only="standard full">prototype</li>
           <li data-only="standard full">friction-walkthrough</li>
-          <li data-req="cond" data-only="full">i18n-strategy<span class="q">?</span></li>
+          <li data-req="cond">i18n-strategy<span class="q">?</span></li>
           <li data-req="cond" data-only="standard full">mockup-to-code<span class="q">?</span></li>
         </ul>
       </div>
@@ -655,7 +655,7 @@ db_change=  budget=</pre>
       </div>
       <div class="pc-gate">
         <span class="lab">pass criteria</span>
-        <code>High-RPN modes lacking the required mitigation = 0 (threshold declared before scoring; AP-class A needs all three layers: detection / prevention / recovery) · blast radius Go or Conditional-Go · emotional valence ≥ median ∧ dark patterns = 0 ∧ WCAG 3.0 Bronze ≥ 3.5 ∧ cognitive load in range · unmitigated high-severity findings = 0 ∧ every new entry point has a declared authz rule ∧ every newly persisted or transmitted field has a declared data class</code>
+        <code>High-RPN modes lacking the required mitigation = 0 (threshold declared before scoring; AP-class A needs all three layers: detection / prevention / recovery) · blast radius Go or Conditional-Go · emotional valence ≥ median ∧ dark patterns = 0 ∧ WCAG 3.0 Bronze ≥ 3.5 ∧ cognitive load in range (baseline and range declared before measuring; no UI surface → <code>no-ui-surface</code> with evidence) · unmitigated high-severity findings = 0 ∧ every new entry point has a declared authz rule ∧ every newly persisted or transmitted field has a declared data class</code>
       </div>
     </article>
 
@@ -663,7 +663,7 @@ db_change=  budget=</pre>
       <div class="pc-id"><span class="k">P6</span><span class="role">build / judge / breadth</span></div>
       <div class="pc-body">
         <h3>Implementation loop — bounded, across an engine boundary</h3>
-        <p class="focus">Nothing crosses the Phase 5 → 6 boundary except the loop contract: L3 ACs + mitigations + friction signals + the declared cap. <strong>Not every in-loop row runs on <code>build</code></strong> — the loop is where maker ≠ checker has to hold, so review and tests are pushed off the building engine.</p>
+        <p class="focus">Nothing crosses the Phase 5 → 6 boundary except the loop contract: L3 ACs + mitigations + friction signals + the measurement contract + required evidence + the declared cap. <strong>Not every in-loop row runs on <code>build</code></strong> — the loop is where maker ≠ checker has to hold, so review and tests are pushed off the building engine.</p>
         <ul class="rows">
           <li data-req="cond">loop-driver<span class="q">?</span></li>
           <li>implementation</li>
@@ -677,7 +677,7 @@ db_change=  budget=</pre>
       </div>
       <div class="pc-gate">
         <span class="lab">termination</span>
-        <code>ACCEPT · diminishing-returns (Δ &lt; ε) · cap-reached · BLOCK</code>
+        <code>ACCEPT · diminishing-returns (Δ &lt; ε, declared in the loop contract) · cap-reached · BLOCK</code>
         <p class="fail"><b>preconditions</b>The five-point loop precondition gate passes — otherwise do not enter the loop, and report which point failed. Engine availability: <code>build</code> answers a spawn, <code>judge</code> is a different CLI from <code>build</code> wherever a second CLI exists, <code>agents.max_depth ≥ 2</code>, and the subagent tools are permitted. If availability fails, never silently fall back — enter the degradation protocol; with one reachable CLI the run records <code>context-only</code> and proceeds.</p>
       </div>
     </article>
@@ -892,7 +892,7 @@ db_change=  budget=</pre>
     <li data-n="05"><b>Degradation changes who runs a gate, never whether it passes.</b> No threshold moves because an engine was missing.</li>
   </ol>
 
-  <div class="callout"><b>"Present but unusable" is not "absent".</b> A binary that answers but whose role spawn fails on auth, quota or config is a <em>transient</em> blocker. It is surfaced through the degradation protocol's <strong>abort-and-resume</strong> option — Phase 0–5 output is already checkpointed — not silently rebound. A blocker resolved in ten minutes is cheaper than a run scored against the wrong roster.</div>
+  <div class="callout"><b>"Present but unusable" is not "absent".</b> A binary that answers but whose role spawn fails on auth, quota or config is a <em>transient</em> blocker. At the Phase 5 → 6 handoff it goes through the degradation protocol; in any other phase the open phase stays open and the user is asked once: <strong>abort and resume</strong> into that phase (the default), or a recorded rebind of the failing role. Never silently rebound. A blocker resolved in ten minutes is cheaper than a run scored against the wrong roster.</div>
 
   <h3>Headless invocation — the silent-output traps</h3>
   <div class="tw">
@@ -915,7 +915,7 @@ db_change=  budget=</pre>
     <table>
       <thead><tr><th>Gate</th><th>Fires at</th><th>Passing condition</th><th>On failure</th></tr></thead>
       <tbody>
-        <tr><td><b>Boundary confirm</b></td><td>Before launch; P0 exit for discovery</td><td>Explicit grant per Modes</td><td>Proposal/checkpoint and stop without an answer; no silent launch</td></tr>
+        <tr><td><b>Boundary confirm</b></td><td>Before launch; P0 exit for discovery</td><td>Explicit grant per Modes</td><td>Stop at the proposal without an answer (checkpointed only for granted discovery); no silent launch</td></tr>
         <tr><td><b>Verdict</b></td><td>Phase 3 exit</td><td>A non-split verdict with an AC seed and a scope boundary</td><td>1-1-1 split → human verdict, then re-enter Phase 3</td></tr>
         <tr><td><b>Traceability</b></td><td>Phase 4 exit</td><td>All required and decision-critical obligations traced; optional gaps explicit</td><td>P4 or intent owner; no unilateral scope downgrade</td></tr>
         <tr><td><b>Risk Gate</b></td><td>Phase 5 exit</td><td>All four axes: blast radius, RPN, friction, security</td><td>No-Go → first wrong decision: P1 demand, P4 spec, P5 design</td></tr>
@@ -1095,14 +1095,14 @@ artifacts/
         <table>
           <thead><tr><th>Profile</th><th class="num-c">Agents</th><th>Cost</th></tr></thead>
           <tbody>
-            <tr><td>Lite — no UI, spec scope Lite</td><td class="num-c">11–13</td><td>Low</td></tr>
-            <tr><td>Standard — UI, spec scope Standard</td><td class="num-c">17–22</td><td>Medium</td></tr>
-            <tr><td>Full — greenfield, spec scope Full</td><td class="num-c">23–30</td><td>High</td></tr>
-            <tr><td>+ autonomous bootstrap (Phase 0)</td><td class="num-c">+4–8</td><td>+10–20%</td></tr>
+            <tr><td>Lite — no UI, spec scope Lite</td><td class="num-c">16–24</td><td>Low</td></tr>
+            <tr><td>Standard — UI, spec scope Standard</td><td class="num-c">23–37</td><td>Medium</td></tr>
+            <tr><td>Full — greenfield, spec scope Full</td><td class="num-c">27–36</td><td>High</td></tr>
+            <tr><td>+ autonomous bootstrap (Phase 0)</td><td class="num-c">+3–8</td><td>+10–20%</td></tr>
           </tbody>
         </table>
       </div>
-      <p class="sec-note" style="margin-top:14px">Counting loop iterations, that is <strong>27–61 spawns</strong> at the Full autonomous profile. For repeated similar requests, propose a project-local skill to amortise the chain design cost instead of re-running the chain.</p>
+      <p class="sec-note" style="margin-top:14px">Counts are one agent per roster row that runs, with one loop cycle, derived from the rosters rather than measured. Counting the three deliberation voices and up to five further loop cycles, that is <strong>32–81 spawns</strong> at the Full autonomous profile. For repeated similar requests, propose a project-local skill to amortise the chain design cost instead of re-running the chain.</p>
     </div>
     <div>
       <h3 style="margin-top:0">The budget envelope</h3>
@@ -1145,11 +1145,11 @@ artifacts/
 <script>
 (function () {
   var PROFILES = {
-    lite:     { count: "11–13", note: "no UI · UX track idle · spec scope Lite" },
-    standard: { count: "17–22", note: "all phases active" },
-    full:     { count: "23–30", note: "+ scope-cutting / formal-spec / design-file-extraction / i18n" }
+    lite:     { count: "16–24", note: "no UI · UX track idle · spec scope Lite" },
+    standard: { count: "23–37", note: "all phases active" },
+    full:     { count: "27–36", note: "+ scope-cutting / formal-spec / design-file-extraction / i18n" }
   };
-  var BOOT = { lite: "15–21", standard: "21–30", full: "27–38" };
+  var BOOT = { lite: "19–32", standard: "26–45", full: "30–44" };
 
   var seg = document.getElementById("segProfile");
   var buttons = seg.querySelectorAll("button");
