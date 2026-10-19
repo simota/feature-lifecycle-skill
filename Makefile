@@ -115,7 +115,9 @@ status:
 # runs hooks from that path and ignores `.git/hooks`, and in a linked worktree `.git`
 # is a file. `set -e` keeps a failed write from reporting "installed".
 hooks:
-	@set -e; cd "$(REPO)"; h=$$(git rev-parse --git-path hooks); d="$$h/pre-commit"; \
+	@set -e; \
+	if [ ! -d "$(SKILL)" ]; then echo "ERROR   $(SKILL) does not exist — run make from the repo root"; exit 1; fi; \
+	cd "$(REPO)"; h=$$(git rev-parse --git-path hooks); d="$$h/pre-commit"; \
 	if [ -e "$$d" ] && ! grep -q "installed by feature-lifecycle-skill" "$$d" 2>/dev/null; then \
 	  echo "ERROR   $$d exists and was not installed by this target — move it, then re-run"; exit 1; \
 	fi; \

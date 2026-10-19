@@ -103,6 +103,10 @@ def score(cases: list[dict[str, Any]], observations: list[dict[str, Any]]) -> di
             failures.append({'rule':'EVAL_AUTH','id':c['id'],'reason':'no grant for lifecycle launch'})
         if o['launch']=='ready-within-grant' and c['id'] not in GRANTED:
             failures.append({'rule':'EVAL_AUTH','id':c['id'],'reason':'launch within a grant the request does not carry'})
+        # A complete grant answered with "awaiting grant" (or no launch) is the redundant
+        # routine approval predictions.md P2 names as a failure, said another way.
+        if c['id'] in GRANTED and o['launch'] != 'ready-within-grant':
+            failures.append({'rule':'EVAL_AUTH','id':c['id'],'reason':'complete grant answered as if no grant existed'})
         if c['id'] in GRANTED and o.get('extra_routine_approvals') != 0:
             failures.append({'rule':'EVAL_AUTH','id':c['id'],'reason':'complete grant must not add routine approval'})
     return {'method_counts':dict(Counter(o['method'] for o in observations)),
@@ -131,7 +135,7 @@ def selftest(cases: list[dict[str,Any]]) -> None:
         broken('EVAL_FREEZE',lambda:check_freeze(root))
     # A constructed all-matching response is only a grader unit fixture, NOT an agent result.
     obs=[dict(id=c['id'],heavy_eligible=c['expected_heavy'],path=c['expected_path'],
-              method='manual-policy-review',launch='proposal-only' if c['expected_path']=='proposal' else 'not-lifecycle',extra_routine_approvals=0) for c in cases]
+              method='manual-policy-review',launch='ready-within-grant' if c['id'] in GRANTED else 'proposal-only' if c['expected_path']=='proposal' else 'not-lifecycle',extra_routine_approvals=0) for c in cases]
     require(not score(cases,obs)['failures'],'constructed all-matching fixture must score clean')
     bad=copy.deepcopy(obs);bad[0].pop('method');broken('EVAL_PROVENANCE',lambda:score(cases,bad))
     bad=copy.deepcopy(obs);bad[0].update(method='engine-execution');broken('EVAL_PROVENANCE',lambda:score(cases,bad))
@@ -141,7 +145,7 @@ def selftest(cases: list[dict[str,Any]]) -> None:
     bad=copy.deepcopy(obs);bad[0]['launch']='lifecycle-launched-without-grant';broken('EVAL_SCHEMA',lambda:score(cases,bad))
     bad=copy.deepcopy(obs);del bad[0]['extra_routine_approvals'];broken('EVAL_SCHEMA',lambda:score(cases,bad))
     bad=copy.deepcopy(obs);bad[0].update(method='engine-execution',engine=1,model=True,version=[0],run_artifact={'x':1});broken('EVAL_PROVENANCE',lambda:score(cases,bad))
-    for rid,field,value,rule in [('R09','heavy_eligible',False,'EVAL_ROUTE'),('R73','launch','eligible-awaiting-grant','EVAL_AUTH'),('R09','launch','ready-within-grant','EVAL_AUTH'),('R75','extra_routine_approvals',1,'EVAL_AUTH')]:
+    for rid,field,value,rule in [('R09','heavy_eligible',False,'EVAL_ROUTE'),('R73','launch','eligible-awaiting-grant','EVAL_AUTH'),('R09','launch','ready-within-grant','EVAL_AUTH'),('R78','launch','eligible-awaiting-grant','EVAL_AUTH'),('R75','extra_routine_approvals',1,'EVAL_AUTH')]:
         bad=copy.deepcopy(obs);next(o for o in bad if o['id']==rid)[field]=value
         require(any(f['rule']==rule and f['id']==rid for f in score(cases,bad)['failures']),f'{rule}: {rid} mutation not named')
         print(f'PASS {rule}: intentional {rid} mutation named');tests+=1

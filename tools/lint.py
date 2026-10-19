@@ -198,6 +198,7 @@ def frontmatter_errors(text: str) -> list[str]:
         return []
     errors: list[str] = []
     plain = False  # the current value is an unquoted plain scalar
+    dq = False     # the current value is double-quoted, where `\` starts an escape
     for line in text[4:text.find("\n---\n", 4)].splitlines():
         if not line.strip() or line.lstrip().startswith("#"):
             continue
@@ -206,16 +207,22 @@ def frontmatter_errors(text: str) -> list[str]:
                 errors.append(f"tab in indentation: `{line.strip()[:40]}`")
             elif plain and (": " in line or " #" in line):
                 errors.append(f"`: ` or ` #` in an unquoted continuation line: `{line.strip()[:40]}`")
+            elif dq and "\\" in line:
+                errors.append(f"escape sequence in a double-quoted continuation line: `{line.strip()[:40]}`")
             continue
         m = re.match(r"^([^\s:#][^:]*):(?:\s+(.*))?$", line)
         if not m:
             errors.append(f"not a `key: value` line: `{line[:40]}`")
-            plain = False
+            plain = dq = False
             continue
         value = (m.group(2) or "").strip()
         plain = bool(value) and value[0] not in "\"'" and value not in BLOCK_INDICATORS
+        dq = value.startswith('"')
         if plain and (": " in value or " #" in value):
-            errors.append(f"`{m.group(1)}` is unquoted and contains `: ` or ` #` — quote it")
+            errors.append(f"`{m.group(1)}` is unquoted and contains `: ` or ` #` — quote it, or move a comment out")
+        # `[`/`{` stay allowed: `allowed-tools: [Read, Grep]` is a legitimate flow sequence.
+        if plain and (value[0] in "`@*&!%|>" or value.startswith(("- ", "? ")) or value.endswith(":")):
+            errors.append(f"`{m.group(1)}` is unquoted and starts with a YAML indicator or ends with `:` — quote it")
         if value.startswith('"') and "\\" in value:
             errors.append(f"`{m.group(1)}` carries an escape sequence — write the character itself")
     return errors
@@ -225,10 +232,18 @@ def headings(text: str, level: int | None = None) -> list[str]:
     """Markdown headings outside fenced code blocks and HTML comments, optionally only
     those of one level. A `### Residual Ledger` inside a fenced template, or a heading
     inside `<!-- -->`, renders as nothing, so nothing can be cited to it."""
-    text = re.sub(r"<!--.*?-->", lambda m: "\n" * m.group(0).count("\n"), text, flags=re.S)
     found: list[str] = []
     fence = ""  # the opening run of backticks or tildes; a fence closes only on its own kind
+    comment = False
     for line in text.splitlines():
+        # An HTML comment block starts a line (outside a fence); `<!--` inside inline code
+        # or a fenced example is text, and must not swallow the headings after it.
+        if comment:
+            comment = "-->" not in line
+            continue
+        if not fence and re.match(r"^ {0,3}<!--", line):
+            comment = "-->" not in line[line.index("<!--") + 4:]
+            continue
         marker = re.match(r"^ {0,3}(`{3,}|~{3,})", line)
         if marker:
             run = marker.group(1)
@@ -577,7 +592,9 @@ def _set_description(value: str):
         r"^description: .*$", lambda _m: f"description: {value}", s, count=1, flags=re.M))
 
 
-#: (rule, label, mutation). The rule id is asserted, not just the exit code: a
+#: (rule, label, mutation). Rule "clean" inverts the expectation: the edit is valid and
+#: the linter must exit 0, so a check that over-reaches is caught too.
+#: The rule id is asserted, not just the exit code: a
 #: mutation usually trips more than one check — `name: Bad_Name` breaks kebab-case
 #: *and* the folder-name match — so exit 1 alone cannot say which one caught it,
 #: and a deleted check keeps passing behind its neighbour.
@@ -611,6 +628,16 @@ MUTATIONS = [
      _edit("SKILL.md", lambda s: s.replace("name: feature-lifecycle", "name:feature-lifecycle", 1))),
     ("F4", "rejects an escape sequence that decodes past the F2 checks",
      _set_description('"Use when the feature is \\u9ad8 risk and costly to reverse."')),
+    ("F4", "rejects a tab-indented continuation line",
+     _set_description("Use when the feature is costly\n\tto discover late.")),
+    ("F4", "rejects `: ` on an unquoted continuation line",
+     _set_description("Use when the feature is costly\n  to discover late: after the build.")),
+    ("F4", "rejects ` #` in an unquoted value",
+     _set_description("Use when the feature is costly to discover late #risk")),
+    ("F4", "rejects an escape on a double-quoted continuation line",
+     _set_description('"Use when the feature is\n  \\u9ad8 risk and costly to reverse."')),
+    ("F4", "rejects an unquoted value starting with a YAML indicator",
+     _set_description("`Use` when the feature is costly to discover late.")),
     ("F3", "rejects an unknown frontmatter key",
      _edit("SKILL.md", lambda s: s.replace("name: feature-lifecycle", "name: feature-lifecycle\nversion: 2", 1))),
     ("H1", "catches a dropped marker",
@@ -626,6 +653,11 @@ MUTATIONS = [
            .replace("\n## Orchestrator Sub-Mode\n", "\n## Orchestrator Sub-Mode C#\n", 1))),
     ("ST1", "requires the section at level 2",
      _edit("SKILL.md", lambda s: s.replace("\n## Collaboration\n", "\n### Collaboration notes\n", 1))),
+    ("ST1", "requires the section's whole name, not a longer word",
+     _edit("SKILL.md", lambda s: s.replace("\n## Collaboration\n", "\n## Collaborations\n", 1))),
+    ("clean", "`<!--` in inline code and a later `-->` hide no heading",
+     _edit("SKILL.md", lambda s: s.replace("\n## Core Contract\n", "\nWrite `<!--` to open a comment.\n\n## Core Contract\n", 1)
+           .replace("\n## Gotchas\n", "\n`A --> B` is an arrow.\n\n## Gotchas\n", 1))),
     ("ST1", "ignores a required heading inside an HTML comment",
      _edit("SKILL.md", lambda s: s.replace("\n## Core Contract\n", "\n<!--\n## Core Contract\n-->\n", 1))),
     ("ST1", "ignores a required heading inside a tilde fence",
@@ -661,8 +693,10 @@ MUTATIONS = [
     ("C1", "catches a missing SKILL.md", _rename_entry_file),
     ("S1", "blocks at the top line tier",
      _edit("SKILL.md", lambda s: s + "\n" * 1100)),
+    # Body cut to the sections above Gotchas, then padded past 700 lines: well under every
+    # token tier, so only the line tier can block it however SKILL.md grows.
     ("S1", "blocks at the P2 line tier",
-     _edit("SKILL.md", lambda s: s + "\n" * 450)),
+     _edit("SKILL.md", lambda s: s[:s.index("\n## Gotchas")] + "\n" * 800)),
     ("S1", "blocks at the top token tier",
      _edit("SKILL.md", lambda s: s + "\n" + "x" * 60000)),
 ]
@@ -690,7 +724,13 @@ def selftest() -> int:
 
             proc = subprocess.run([sys.executable, str(work / script.relative_to(REPO_ROOT))],
                                   capture_output=True, text=True)
-            if proc.returncode != 1:
+            if rule == "clean":
+                # A false-positive guard: valid input the linter must not block.
+                if proc.returncode == 0:
+                    print(f"  PASS    {title}")
+                    continue
+                print(f"  FAIL    {title} — linter exited {proc.returncode} on valid input, expected 0")
+            elif proc.returncode != 1:
                 print(f"  FAIL    {title} — linter exited {proc.returncode}, expected 1")
             elif not _names_blocking(proc.stdout, rule):
                 print(f"  FAIL    {title} — exited 1 with no blocking {rule} finding; "
