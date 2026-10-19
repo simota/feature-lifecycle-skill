@@ -143,7 +143,8 @@ def _unquote(value: str) -> str:
     """Strip one matched pair of surrounding quotes. Stripping quote *characters*
     would eat a value's own trailing quotation mark."""
     if len(value) >= 2 and value[0] == value[-1] and value[0] in "\"'":
-        return value[1:-1]
+        # YAML's one escape inside '…' is a doubled quote: 'it''s' is "it's".
+        return value[1:-1].replace("''", "'") if value[0] == "'" else value[1:-1]
     return value
 
 
@@ -163,6 +164,7 @@ def parse_frontmatter(text: str) -> tuple[dict[str, str], str]:
     block, body = text[4:end], text[end + 5 :]
 
     parts: dict[str, list[str]] = {}
+    blocks: set[str] = set()  # keys whose value is a `>`/`|` block scalar: never unquoted
     key: str | None = None
     scalar = False
 
@@ -182,11 +184,28 @@ def parse_frontmatter(text: str) -> tuple[dict[str, str], str]:
         key, value = raw_key.strip(), value.strip()
         scalar = value in (">", ">-", ">+", "|", "|-", "|+")
         parts[key] = [] if scalar else [value]
+        (blocks.add if scalar else blocks.discard)(key)
 
-    return {k: _unquote(" ".join(v).strip()) for k, v in parts.items()}, body
+    return {k: " ".join(v).strip() if k in blocks else _decode(" ".join(v).strip())
+            for k, v in parts.items()}, body
+
+
+def _decode(value: str) -> str:
+    """A flow scalar's text as YAML reads it: a quoted value ends at its real closing quote
+    (a trailing ` # comment` is dropped, as YAML drops it), with `''` decoded inside '…'.
+    An unclosed quote is left as written; F4 reports it."""
+    if value[:1] in "\"'" and value:
+        end = _quote_end(value, value[0], 1)
+        if end != -1:
+            inner = value[1:end - 1]
+            return inner.replace("''", "'") if value[0] == "'" else inner
+    return value
 
 
 BLOCK_INDICATORS = (">", ">-", ">+", "|", "|-", "|+")
+#: Keys whose value a CLI reads as one string. A flow collection (`[…]`, `{…}`) loads as a
+#: list or map there, so it is a finding; `tools`/`allowed-tools` may legitimately be lists.
+SCALAR_KEYS = {"name", "description", "model"}
 
 
 def _quote_end(value: str, quote: str, start: int) -> int:
@@ -213,21 +232,80 @@ def _after_quote_ok(rest: str) -> bool:
     return not rest or rest.startswith("#")
 
 
+#: Plain scalars YAML 1.1 loads as something other than a string: a CLI reading `name: yes`
+#: gets a boolean, `model: 4` a number, `description: ~` nothing.
+NON_STRING_PLAIN = re.compile(
+    r"^(?:y|yes|n|no|true|false|on|off|null|~|[-+]?(?:\d[\d_]*)?\.?\d[\d_]*(?:e[-+]?\d+)?|\.inf|\.nan)$",
+    re.I)
+
+
 def frontmatter_errors(text: str) -> list[str]:
     """Constructs `parse_frontmatter` reads leniently but a strict YAML loader rejects or
     reads differently. A CLI that loads the frontmatter with a real YAML parser fails to
     load the skill, or routes on text the F2 checks never inspected, while lint stays
-    green — so each one is a finding rather than a tolerance."""
+    green — so each one is a finding rather than a tolerance.
+
+    A value starts either after `key: ` or, when that is empty, on the next indented line;
+    both starts get the same checks. Differentially fuzzed against PyYAML."""
     if not text.startswith("---\n") or text.find("\n---\n", 4) == -1:
         return []
     errors: list[str] = []
-    plain = False  # the current value is an unquoted plain scalar
-    dq = False     # the current value is double-quoted, where `\` starts an escape
+    key = ""
+    plain = False    # the current value is an unquoted plain scalar
+    dq = False       # the current value is double-quoted, where `\` starts an escape
     open_quote = ""  # the quote of a scalar still waiting for its closing quote
-    for line in text[4:text.find("\n---\n", 4)].splitlines():
-        if not line.strip() or line.lstrip().startswith("#"):
+    block = False    # the current value is a `>`/`|` block scalar: its lines are all content
+    pending = False  # `key:` with nothing after it: the next indented line starts the value
+    block_indent = 0  # indentation of a block scalar's first content line
+    closed = False    # a quoted value already closed: nothing may continue it
+
+    def start(value: str, whole: str) -> None:
+        """Classify a value's first line; `whole` is the full scalar text when it is one line."""
+        nonlocal plain, dq, open_quote, block, closed
+        closed = False
+        plain = bool(value) and value[0] not in "\"'" and value not in BLOCK_INDICATORS
+        dq = value.startswith('"')
+        block = value in BLOCK_INDICATORS
+        if key in SCALAR_KEYS and value[:1] in ("[", "{"):
+            errors.append(f"`{key}` must be a string; `{value[0]}` starts a flow collection — quote it")
+        if key in SCALAR_KEYS and plain and NON_STRING_PLAIN.match(whole):
+            errors.append(f"`{key}: {whole}` loads as a non-string in YAML — quote it")
+        if value[:1] in "\"'" and value:
+            end = _quote_end(value, value[0], 1)
+            if end == -1:
+                open_quote = value[0]
+            else:
+                closed = True
+            if end != -1 and not _after_quote_ok(value[end:]):
+                errors.append(f"`{key}` has text after its closing quote — quote the whole value")
+        if plain and (": " in value or " #" in value):
+            errors.append(f"`{key}` is unquoted and contains `: ` or ` #` — quote it, or move a comment out")
+        # `[`/`{` are flow collections: allowed for list-valued keys such as allowed-tools.
+        if plain and (value[0] in "#`@*&!%|>]}," or value in ("-", "?")
+                      or value.startswith(("- ", "? ")) or value.endswith(":")):
+            errors.append(f"`{key}` is unquoted and starts with a YAML indicator or ends with `:` — quote it")
+        if dq and "\\" in value:
+            errors.append(f"`{key}` carries an escape sequence — write the character itself")
+
+    lines = text[4:text.find("\n---\n", 4)].splitlines()
+    for i, line in enumerate(lines):
+        if not line.strip():
             continue
-        if line[:1] in (" ", "\t") and open_quote:
+        indented = line[:1] in (" ", "\t")
+        if line.lstrip().startswith("#") and not open_quote and not block and not closed:
+            # A top-level comment is skipped by both parsers. An indented one is a YAML
+            # comment too, but parse_frontmatter appends it to the value above it, so
+            # lint would inspect text a CLI never sees.
+            if indented:
+                errors.append(f"indented comment read as part of the value above: `{line.strip()[:40]}`")
+            continue
+        if indented and line[: len(line) - len(line.lstrip())].count("\t"):
+            errors.append(f"tab in indentation: `{line.strip()[:40]}`")
+            continue
+        if indented and closed and not line.lstrip().startswith("#"):
+            errors.append(f"`{key}`: text continues after the closing quote: `{line.strip()[:40]}`")
+            continue
+        if indented and open_quote:
             end = _quote_end(line, open_quote, 0)
             if open_quote == '"' and "\\" in line:
                 errors.append(f"escape sequence in a double-quoted continuation line: `{line.strip()[:40]}`")
@@ -235,39 +313,53 @@ def frontmatter_errors(text: str) -> list[str]:
                 if not _after_quote_ok(line[end:]):
                     errors.append(f"text after a closing quote: `{line.strip()[:40]}`")
                 open_quote = ""
+                closed = True
             continue
         if open_quote:
             errors.append(f"a quoted value is never closed before `{line[:40]}`")
             open_quote = ""
-        if line[:1] in (" ", "\t"):
-            if line[: len(line) - len(line.lstrip())].count("\t"):
-                errors.append(f"tab in indentation: `{line.strip()[:40]}`")
-            elif plain and (": " in line or " #" in line):
-                errors.append(f"`: ` or ` #` in an unquoted continuation line: `{line.strip()[:40]}`")
-            elif dq and "\\" in line:
-                errors.append(f"escape sequence in a double-quoted continuation line: `{line.strip()[:40]}`")
+        if indented and block:
+            indent = len(line) - len(line.lstrip())
+            if not block_indent:
+                block_indent = indent
+            elif indent < block_indent:
+                errors.append(f"block scalar line indented less than its first line: `{line.strip()[:40]}`")
+            continue
+        if indented and pending:
+            pending = False
+            following = []
+            for nxt in lines[i + 1:]:
+                if not nxt[:1] in (" ", "\t") or not nxt.strip():
+                    break
+                following.append(nxt.strip())
+            if line.strip() in BLOCK_INDICATORS:
+                errors.append(f"`{key}`: put the block indicator `{line.strip()}` after the key, not on the next line")
+            start(line.strip(), " ".join([line.strip(), *following]))
+            block_indent = 0
+            continue
+        if indented:
+            cont = line.strip()
+            if plain and (": " in line or " #" in line or cont == ":" or cont.endswith(":")):
+                errors.append(f"YAML indicator in an unquoted continuation line: `{cont[:40]}`")
             continue
         m = re.match(r"^([^\s:#][^:]*):(?:\s+(.*))?$", line)
         if not m:
             errors.append(f"not a `key: value` line: `{line[:40]}`")
-            plain = dq = False
+            key, plain, dq, block, pending, closed = "", False, False, False, False, False
             continue
+        key = m.group(1).strip()
         value = (m.group(2) or "").strip()
-        plain = bool(value) and value[0] not in "\"'" and value not in BLOCK_INDICATORS
-        dq = value.startswith('"')
-        if value[:1] in "\"'" and value:
-            end = _quote_end(value, value[0], 1)
-            if end == -1:
-                open_quote = value[0]
-            elif not _after_quote_ok(value[end:]):
-                errors.append(f"`{m.group(1)}` has text after its closing quote — quote the whole value")
-        if plain and (": " in value or " #" in value):
-            errors.append(f"`{m.group(1)}` is unquoted and contains `: ` or ` #` — quote it, or move a comment out")
-        # `[`/`{` stay allowed: `allowed-tools: [Read, Grep]` is a legitimate flow sequence.
-        if plain and (value[0] in "`@*&!%|>" or value.startswith(("- ", "? ")) or value.endswith(":")):
-            errors.append(f"`{m.group(1)}` is unquoted and starts with a YAML indicator or ends with `:` — quote it")
-        if value.startswith('"') and "\\" in value:
-            errors.append(f"`{m.group(1)}` carries an escape sequence — write the character itself")
+        pending = not value
+        if value:
+            following = []
+            for nxt in lines[i + 1:]:
+                if not nxt[:1] in (" ", "\t") or not nxt.strip():
+                    break
+                following.append(nxt.strip())
+            start(value, " ".join([value, *following]))
+            block_indent = 0
+        else:
+            plain = dq = block = closed = False
     if open_quote:
         errors.append("a quoted value is never closed before the end of the frontmatter")
     return errors
@@ -687,6 +779,14 @@ MUTATIONS = [
      _set_description('"Use when the feature is costly to discover late.')),
     ("F4", "rejects text after a closing quote",
      _set_description('"Use when the feature is costly" to discover late.')),
+    ("F4", "rejects a flow collection where a string is required",
+     _set_description("[Use when the feature is costly to discover late]")),
+    ("F4", "rejects a value that is a comment",
+     _set_description("# Use when the feature is costly to discover late")),
+    ("F4", "rejects an indented comment read as the value",
+     _set_description("\n  # Use when the feature is costly to discover late")),
+    ("F4", "rejects a plain value YAML loads as a non-string",
+     _edit("SKILL.md", lambda s: s.replace("name: feature-lifecycle", "name: yes", 1))),
     ("F3", "rejects an unknown frontmatter key",
      _edit("SKILL.md", lambda s: s.replace("name: feature-lifecycle", "name: feature-lifecycle\nversion: 2", 1))),
     ("H1", "catches a dropped marker",
