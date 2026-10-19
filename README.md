@@ -111,7 +111,9 @@ make selftest    # prove each check blocks, and names itself, when broken
 make check       # both — the full gate
 make eval        # verify the frozen adversarial corpus and its grader (tests/adversarial/)
 make hooks       # install the pre-commit hook — lints the staged content
-                 # (lint always; selftest when tools/ changed; eval when tests/adversarial/ changed)
+                 # (lint always; selftest when tools/, skills/ or README.md changed;
+                 #  eval when tests/adversarial/ changed) — into git's hooks path,
+                 #  so core.hooksPath and linked worktrees work
 ```
 
 CI (`.github/workflows/check.yml`) runs `make check` and `make eval` on every push to

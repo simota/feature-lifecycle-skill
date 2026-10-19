@@ -15,19 +15,23 @@ checked mechanically rather than remembered.
       script and nothing from CJK onward (accented Latin prose and typographic
       punctuation pass)
   F3  no frontmatter keys outside the allowlist
+  F4  the frontmatter is YAML a strict loader accepts, in the subset this parser reads:
+      `key: value` lines, no tab indentation, no `: ` or ` #` inside an unquoted
+      value, and no escape sequence inside a double-quoted one (an escape decodes to
+      text F2 never saw)
   N1  skill folder name == frontmatter `name`
   C1  the entry file is exactly `SKILL.md`
   C2  no README.md inside the skill folder (it belongs at the repo root)
   H1  CAPABILITIES_SUMMARY block present, with the COLLABORATION_PATTERNS,
       BIDIRECTIONAL_PARTNERS and PROJECT_AFFINITY markers inside that same
       `<!-- -->` comment — a marker that drifted out of it is not a marker
-  ST1 required section headings present, outside code fences
+  ST1 required `## ` section headings present, outside code fences and HTML comments
   L1  no `_common/<path>` reference anywhere, at any depth, extension or not —
       the standalone invariant
   L2  every `reference/<file>.md` cited by any file in the skill resolves on disk, and
       every `skills/<name>/…` or bare `reference/<file>.md` path the repo-root
       README.md names exists
-  L3  every file under `reference/` is cited by at least one *other* file
+  L3  every file under `reference/` is reachable from SKILL.md by following citations
   L4  every `§ <section>` citation — `reference/x.md` § Heading, `SKILL.md` § Heading,
       a bare § Heading in its own file, or a numbered `§N` — names a heading that
       exists in the file it points at, outside code fences
@@ -139,7 +143,8 @@ def _unquote(value: str) -> str:
     """Strip one matched pair of surrounding quotes. Stripping quote *characters*
     would eat a value's own trailing quotation mark."""
     if len(value) >= 2 and value[0] == value[-1] and value[0] in "\"'":
-        return value[1:-1]
+        # YAML's one escape inside '…' is a doubled quote: 'it''s' is "it's".
+        return value[1:-1].replace("''", "'") if value[0] == "'" else value[1:-1]
     return value
 
 
@@ -159,6 +164,7 @@ def parse_frontmatter(text: str) -> tuple[dict[str, str], str]:
     block, body = text[4:end], text[end + 5 :]
 
     parts: dict[str, list[str]] = {}
+    blocks: set[str] = set()  # keys whose value is a `>`/`|` block scalar: never unquoted
     key: str | None = None
     scalar = False
 
@@ -178,16 +184,203 @@ def parse_frontmatter(text: str) -> tuple[dict[str, str], str]:
         key, value = raw_key.strip(), value.strip()
         scalar = value in (">", ">-", ">+", "|", "|-", "|+")
         parts[key] = [] if scalar else [value]
+        (blocks.add if scalar else blocks.discard)(key)
 
-    return {k: _unquote(" ".join(v).strip()) for k, v in parts.items()}, body
+    return {k: " ".join(v).strip() if k in blocks else _decode(" ".join(v).strip())
+            for k, v in parts.items()}, body
 
 
-def headings(text: str) -> list[str]:
-    """Markdown headings outside fenced code blocks. A `### Residual Ledger` inside a
-    fenced template renders as literal text, so nothing can be cited to it."""
+def _decode(value: str) -> str:
+    """A flow scalar's text as YAML reads it: a quoted value ends at its real closing quote
+    (a trailing ` # comment` is dropped, as YAML drops it), with `''` decoded inside '…'.
+    An unclosed quote is left as written; F4 reports it."""
+    if value[:1] in "\"'" and value:
+        end = _quote_end(value, value[0], 1)
+        if end != -1:
+            inner = value[1:end - 1]
+            return inner.replace("''", "'") if value[0] == "'" else inner
+    return value
+
+
+BLOCK_INDICATORS = (">", ">-", ">+", "|", "|-", "|+")
+#: Keys whose value a CLI reads as one string. A flow collection (`[…]`, `{…}`) loads as a
+#: list or map there, so it is a finding; `tools`/`allowed-tools` may legitimately be lists.
+SCALAR_KEYS = {"name", "description", "model"}
+
+
+def _quote_end(value: str, quote: str, start: int) -> int:
+    """Index just past the closing quote of a scalar opened before `start`, or -1 if
+    the line does not close it. `\\"` escapes inside "…"; `''` is a literal ' inside '…'."""
+    i = start
+    while i < len(value):
+        c = value[i]
+        if quote == '"' and c == "\\":
+            i += 2
+            continue
+        if c == quote:
+            if quote == "'" and value[i + 1:i + 2] == "'":
+                i += 2
+                continue
+            return i + 1
+        i += 1
+    return -1
+
+
+def _after_quote_ok(rest: str) -> bool:
+    """After a closing quote YAML allows only whitespace or a ` #` comment."""
+    rest = rest.strip()
+    return not rest or rest.startswith("#")
+
+
+#: Plain scalars YAML 1.1 loads as something other than a string: a CLI reading `name: yes`
+#: gets a boolean, `model: 4` a number, `description: ~` nothing.
+NON_STRING_PLAIN = re.compile(
+    r"^(?:y|yes|n|no|true|false|on|off|null|~|[-+]?(?:\d[\d_]*)?\.?\d[\d_]*(?:e[-+]?\d+)?|\.inf|\.nan)$",
+    re.I)
+
+
+def frontmatter_errors(text: str) -> list[str]:
+    """Constructs `parse_frontmatter` reads leniently but a strict YAML loader rejects or
+    reads differently. A CLI that loads the frontmatter with a real YAML parser fails to
+    load the skill, or routes on text the F2 checks never inspected, while lint stays
+    green — so each one is a finding rather than a tolerance.
+
+    A value starts either after `key: ` or, when that is empty, on the next indented line;
+    both starts get the same checks. Differentially fuzzed against PyYAML."""
+    if not text.startswith("---\n") or text.find("\n---\n", 4) == -1:
+        return []
+    errors: list[str] = []
+    key = ""
+    plain = False    # the current value is an unquoted plain scalar
+    dq = False       # the current value is double-quoted, where `\` starts an escape
+    open_quote = ""  # the quote of a scalar still waiting for its closing quote
+    block = False    # the current value is a `>`/`|` block scalar: its lines are all content
+    pending = False  # `key:` with nothing after it: the next indented line starts the value
+    block_indent = 0  # indentation of a block scalar's first content line
+    closed = False    # a quoted value already closed: nothing may continue it
+
+    def start(value: str, whole: str) -> None:
+        """Classify a value's first line; `whole` is the full scalar text when it is one line."""
+        nonlocal plain, dq, open_quote, block, closed
+        closed = False
+        plain = bool(value) and value[0] not in "\"'" and value not in BLOCK_INDICATORS
+        dq = value.startswith('"')
+        block = value in BLOCK_INDICATORS
+        if key in SCALAR_KEYS and value[:1] in ("[", "{"):
+            errors.append(f"`{key}` must be a string; `{value[0]}` starts a flow collection — quote it")
+        if key in SCALAR_KEYS and plain and NON_STRING_PLAIN.match(whole):
+            errors.append(f"`{key}: {whole}` loads as a non-string in YAML — quote it")
+        if value[:1] in "\"'" and value:
+            end = _quote_end(value, value[0], 1)
+            if end == -1:
+                open_quote = value[0]
+            else:
+                closed = True
+            if end != -1 and not _after_quote_ok(value[end:]):
+                errors.append(f"`{key}` has text after its closing quote — quote the whole value")
+        if plain and (": " in value or " #" in value):
+            errors.append(f"`{key}` is unquoted and contains `: ` or ` #` — quote it, or move a comment out")
+        # `[`/`{` are flow collections: allowed for list-valued keys such as allowed-tools.
+        if plain and (value[0] in "#`@*&!%|>]}," or value in ("-", "?")
+                      or value.startswith(("- ", "? ")) or value.endswith(":")):
+            errors.append(f"`{key}` is unquoted and starts with a YAML indicator or ends with `:` — quote it")
+        if dq and "\\" in value:
+            errors.append(f"`{key}` carries an escape sequence — write the character itself")
+
+    lines = text[4:text.find("\n---\n", 4)].splitlines()
+    for i, line in enumerate(lines):
+        if not line.strip():
+            continue
+        indented = line[:1] in (" ", "\t")
+        if line.lstrip().startswith("#") and not open_quote and not block and not closed:
+            # A top-level comment is skipped by both parsers. An indented one is a YAML
+            # comment too, but parse_frontmatter appends it to the value above it, so
+            # lint would inspect text a CLI never sees.
+            if indented:
+                errors.append(f"indented comment read as part of the value above: `{line.strip()[:40]}`")
+            continue
+        if indented and line[: len(line) - len(line.lstrip())].count("\t"):
+            errors.append(f"tab in indentation: `{line.strip()[:40]}`")
+            continue
+        if indented and closed and not line.lstrip().startswith("#"):
+            errors.append(f"`{key}`: text continues after the closing quote: `{line.strip()[:40]}`")
+            continue
+        if indented and open_quote:
+            end = _quote_end(line, open_quote, 0)
+            if open_quote == '"' and "\\" in line:
+                errors.append(f"escape sequence in a double-quoted continuation line: `{line.strip()[:40]}`")
+            if end != -1:
+                if not _after_quote_ok(line[end:]):
+                    errors.append(f"text after a closing quote: `{line.strip()[:40]}`")
+                open_quote = ""
+                closed = True
+            continue
+        if open_quote:
+            errors.append(f"a quoted value is never closed before `{line[:40]}`")
+            open_quote = ""
+        if indented and block:
+            indent = len(line) - len(line.lstrip())
+            if not block_indent:
+                block_indent = indent
+            elif indent < block_indent:
+                errors.append(f"block scalar line indented less than its first line: `{line.strip()[:40]}`")
+            continue
+        if indented and pending:
+            pending = False
+            following = []
+            for nxt in lines[i + 1:]:
+                if not nxt[:1] in (" ", "\t") or not nxt.strip():
+                    break
+                following.append(nxt.strip())
+            if line.strip() in BLOCK_INDICATORS:
+                errors.append(f"`{key}`: put the block indicator `{line.strip()}` after the key, not on the next line")
+            start(line.strip(), " ".join([line.strip(), *following]))
+            block_indent = 0
+            continue
+        if indented:
+            cont = line.strip()
+            if plain and (": " in line or " #" in line or cont == ":" or cont.endswith(":")):
+                errors.append(f"YAML indicator in an unquoted continuation line: `{cont[:40]}`")
+            continue
+        m = re.match(r"^([^\s:#][^:]*):(?:\s+(.*))?$", line)
+        if not m:
+            errors.append(f"not a `key: value` line: `{line[:40]}`")
+            key, plain, dq, block, pending, closed = "", False, False, False, False, False
+            continue
+        key = m.group(1).strip()
+        value = (m.group(2) or "").strip()
+        pending = not value
+        if value:
+            following = []
+            for nxt in lines[i + 1:]:
+                if not nxt[:1] in (" ", "\t") or not nxt.strip():
+                    break
+                following.append(nxt.strip())
+            start(value, " ".join([value, *following]))
+            block_indent = 0
+        else:
+            plain = dq = block = closed = False
+    if open_quote:
+        errors.append("a quoted value is never closed before the end of the frontmatter")
+    return errors
+
+
+def headings(text: str, level: int | None = None) -> list[str]:
+    """Markdown headings outside fenced code blocks and HTML comments, optionally only
+    those of one level. A `### Residual Ledger` inside a fenced template, or a heading
+    inside `<!-- -->`, renders as nothing, so nothing can be cited to it."""
     found: list[str] = []
     fence = ""  # the opening run of backticks or tildes; a fence closes only on its own kind
+    comment = False
     for line in text.splitlines():
+        # An HTML comment block starts a line (outside a fence); `<!--` inside inline code
+        # or a fenced example is text, and must not swallow the headings after it.
+        if comment:
+            comment = "-->" not in line
+            continue
+        if not fence and re.match(r"^ {0,3}<!--", line):
+            comment = "-->" not in line[line.index("<!--") + 4:]
+            continue
         marker = re.match(r"^ {0,3}(`{3,}|~{3,})", line)
         if marker:
             run = marker.group(1)
@@ -199,9 +392,9 @@ def headings(text: str) -> list[str]:
                 continue
         if not fence:
             # A closing `#` run counts only after a space: `## Use C#` is "Use C#".
-            m = re.match(r"^#{1,6}\s+(.+?)(?:\s+#+)?\s*$", line)
-            if m:
-                found.append(m.group(1))
+            m = re.match(r"^(#{1,6})\s+(.+?)(?:\s+#+)?\s*$", line)
+            if m and (level is None or len(m.group(1)) == level):
+                found.append(m.group(2))
     return found
 
 
@@ -310,6 +503,10 @@ def lint_skill(skill_dir: Path, out: list[Finding]) -> None:
             out.append(Finding("P1", "F2", rel(skill_md),
                                f"description contains non-Latin characters: {''.join(sorted(non_latin))}"))
 
+    # F4
+    for error in frontmatter_errors(text):
+        out.append(Finding("P1", "F4", rel(skill_md), f"frontmatter is not strict YAML: {error}"))
+
     # F3
     for key in sorted(set(fm) - FRONTMATTER_KEYS):
         out.append(Finding("P1", "F3", rel(skill_md), f"frontmatter key `{key}` is not allowed"))
@@ -324,9 +521,12 @@ def lint_skill(skill_dir: Path, out: list[Finding]) -> None:
             out.append(Finding("P2", "H1", rel(skill_md), f"{where} `{marker}` marker"))
 
     # ST1
-    present = {h.strip() for h in headings(body)}
+    # A level-2 heading that is the section's name, or starts with it as a whole word:
+    # `### Collaboration notes` or `## Collaborations` is not the section.
+    present = {h.strip().lower() for h in headings(body, level=2)}
     for required in REQUIRED_HEADINGS:
-        if not any(required.lower() in h.lower() for h in present):
+        name = required.lower()
+        if not any(h == name or h.startswith(name + " ") for h in present):
             out.append(Finding("P2", "ST1", rel(skill_md), f"missing required section `## {required}`"))
 
     # S1
@@ -349,7 +549,7 @@ def lint_links(skill_dir: Path, out: list[Finding]) -> None:
     every § citation landing on a heading that exists."""
     rel = lambda p: str(p.relative_to(REPO_ROOT))  # noqa: E731
     files = sorted(p for p in skill_dir.rglob("*.md") if p.is_file())
-    cited: set[str] = set()
+    cites: dict[str, set[str]] = {}
     heading_cache: dict[Path, list[str]] = {}
 
     for path in files:
@@ -390,7 +590,7 @@ def lint_links(skill_dir: Path, out: list[Finding]) -> None:
                 # A file naming its own path — every reference file here carries a
                 # `**Read when:**` header — does not make itself reachable.
                 if match != own:
-                    cited.add(match)
+                    cites.setdefault(own, set()).add(match)
                 if not (skill_dir / match).is_file():
                     out.append(Finding("P1", "L2", f"{rel(path)}:{lineno}",
                                        f"references `{match}`, which does not exist"))
@@ -411,13 +611,20 @@ def lint_links(skill_dir: Path, out: list[Finding]) -> None:
                     out.append(Finding("P1", "L2", f"README.md:{lineno}",
                                        f"names `{match}`, which is not a file in the skill"))
 
-    # L3
+    # L3 — reachability, not mere citation: two files that cite only each other are
+    # both cited, and an agent starting from SKILL.md still never opens either.
+    reached, frontier = {"SKILL.md"}, ["SKILL.md"]
+    while frontier:
+        for target in cites.get(frontier.pop(), ()):
+            if target not in reached:
+                reached.add(target)
+                frontier.append(target)
     ref_dir = skill_dir / "reference"
     if ref_dir.is_dir():
         for path in sorted(ref_dir.glob("*.md")):
-            if f"reference/{path.name}" not in cited:
+            if f"reference/{path.name}" not in reached:
                 out.append(Finding("P2", "L3", rel(path),
-                                   "no other file in the skill cites this — it is unreachable at runtime"))
+                                   "not reachable from SKILL.md by following citations — an agent never opens it"))
 
 
 def run(strict: bool) -> int:
@@ -485,6 +692,14 @@ def _break_readme_layout_row(skill: Path) -> bool:
     return after != before
 
 
+def _add_mutual_orphans(skill: Path) -> bool:
+    (skill / "reference" / "orphan-a.md").write_text(
+        "# orphan a\n\nSee `reference/orphan-b.md`.\n", encoding="utf-8")
+    (skill / "reference" / "orphan-b.md").write_text(
+        "# orphan b\n\nSee `reference/orphan-a.md`.\n", encoding="utf-8")
+    return True
+
+
 def _add_readme(skill: Path) -> bool:
     (skill / "README.md").write_text("# feature-lifecycle\n", encoding="utf-8")
     return True
@@ -514,7 +729,9 @@ def _set_description(value: str):
         r"^description: .*$", lambda _m: f"description: {value}", s, count=1, flags=re.M))
 
 
-#: (rule, label, mutation). The rule id is asserted, not just the exit code: a
+#: (rule, label, mutation). Rule "clean" inverts the expectation: the edit is valid and
+#: the linter must exit 0, so a check that over-reaches is caught too.
+#: The rule id is asserted, not just the exit code: a
 #: mutation usually trips more than one check — `name: Bad_Name` breaks kebab-case
 #: *and* the folder-name match — so exit 1 alone cannot say which one caught it,
 #: and a deleted check keeps passing behind its neighbour.
@@ -536,6 +753,40 @@ MUTATIONS = [
      _set_description('"Use when the feature is \u9ad8\u30ea\u30b9\u30af and expensive to reverse."')),
     ("F2", "rejects a non-Latin script below the CJK range",
      _set_description('"Use when the feature is \u0432\u044b\u0441\u043e\u043a\u0438\u0439 risk and expensive to reverse."')),
+    ("F2", "rejects CJK punctuation in the description",
+     _set_description('"Use when the feature is costly to reverse\u3002"')),
+    ("F2", "rejects a non-ASCII digit in the description",
+     _set_description('"Use when \u0663 teams depend on the feature."')),
+    ("F1", "rejects frontmatter with no name",
+     _edit("SKILL.md", lambda s: s.replace("name: feature-lifecycle\n", "", 1))),
+    ("F4", "rejects an unquoted description containing `: `",
+     _set_description("Use when: the feature is costly to discover late.")),
+    ("F4", "rejects a key line with no space after the colon",
+     _edit("SKILL.md", lambda s: s.replace("name: feature-lifecycle", "name:feature-lifecycle", 1))),
+    ("F4", "rejects an escape sequence that decodes past the F2 checks",
+     _set_description('"Use when the feature is \\u9ad8 risk and costly to reverse."')),
+    ("F4", "rejects a tab-indented continuation line",
+     _set_description("Use when the feature is costly\n\tto discover late.")),
+    ("F4", "rejects `: ` on an unquoted continuation line",
+     _set_description("Use when the feature is costly\n  to discover late: after the build.")),
+    ("F4", "rejects ` #` in an unquoted value",
+     _set_description("Use when the feature is costly to discover late #risk")),
+    ("F4", "rejects an escape on a double-quoted continuation line",
+     _set_description('"Use when the feature is\n  \\u9ad8 risk and costly to reverse."')),
+    ("F4", "rejects an unquoted value starting with a YAML indicator",
+     _set_description("`Use` when the feature is costly to discover late.")),
+    ("F4", "rejects a quoted value that is never closed",
+     _set_description('"Use when the feature is costly to discover late.')),
+    ("F4", "rejects text after a closing quote",
+     _set_description('"Use when the feature is costly" to discover late.')),
+    ("F4", "rejects a flow collection where a string is required",
+     _set_description("[Use when the feature is costly to discover late]")),
+    ("F4", "rejects a value that is a comment",
+     _set_description("# Use when the feature is costly to discover late")),
+    ("F4", "rejects an indented comment read as the value",
+     _set_description("\n  # Use when the feature is costly to discover late")),
+    ("F4", "rejects a plain value YAML loads as a non-string",
+     _edit("SKILL.md", lambda s: s.replace("name: feature-lifecycle", "name: yes", 1))),
     ("F3", "rejects an unknown frontmatter key",
      _edit("SKILL.md", lambda s: s.replace("name: feature-lifecycle", "name: feature-lifecycle\nversion: 2", 1))),
     ("H1", "catches a dropped marker",
@@ -549,8 +800,19 @@ MUTATIONS = [
     ("L4", "keeps a heading's own trailing # (`C#`), so `§ … C` does not resolve to it",
      _edit("SKILL.md", lambda s: s.replace("(§ Orchestrator Sub-Mode)", "(§ Orchestrator Sub-Mode C)", 1)
            .replace("\n## Orchestrator Sub-Mode\n", "\n## Orchestrator Sub-Mode C#\n", 1))),
+    ("ST1", "requires the section at level 2",
+     _edit("SKILL.md", lambda s: s.replace("\n## Collaboration\n", "\n### Collaboration notes\n", 1))),
+    ("ST1", "requires the section's whole name, not a longer word",
+     _edit("SKILL.md", lambda s: s.replace("\n## Collaboration\n", "\n## Collaborations\n", 1))),
+    ("clean", "`<!--` in inline code and a later `-->` hide no heading",
+     _edit("SKILL.md", lambda s: s.replace("\n## Core Contract\n", "\nWrite `<!--` to open a comment.\n\n## Core Contract\n", 1)
+           .replace("\n## Gotchas\n", "\n`A --> B` is an arrow.\n\n## Gotchas\n", 1))),
+    ("ST1", "ignores a required heading inside an HTML comment",
+     _edit("SKILL.md", lambda s: s.replace("\n## Core Contract\n", "\n<!--\n## Core Contract\n-->\n", 1))),
     ("ST1", "ignores a required heading inside a tilde fence",
      _edit("SKILL.md", lambda s: s.replace("\n## Core Contract\n", "\n~~~\n## Core Contract\n~~~\n", 1))),
+    ("L1", "catches a _common path with no extension",
+     _edit("SKILL.md", lambda s: s.replace("\n## Workflow\n", "\nSee `_common/OPERATIONAL`.\n\n## Workflow\n", 1))),
     ("L1", "catches a reintroduced _common path",
      _edit("SKILL.md", lambda s: s.replace("\n## Workflow\n", "\nSee `_common/OPERATIONAL.md`.\n\n## Workflow\n", 1))),
     ("L2", "catches a dead reference link",
@@ -573,12 +835,17 @@ MUTATIONS = [
          "`reference/engine-roster.md` § Phase → Role Map owns", "`contracts.md` § Phase → Role Map owns", 1))),
     ("L3", "catches an uncited reference file", _add_orphan_reference),
     ("L3", "catches a reference file that cites only itself", _add_self_citing_reference),
+    ("L3", "catches two reference files that cite only each other", _add_mutual_orphans),
     ("C2", "catches a README inside the skill folder", _add_readme),
     ("N1", "catches a name that no longer matches its folder",
      _edit("SKILL.md", lambda s: s.replace("name: feature-lifecycle", "name: feature-lifecycle-lifecycle", 1))),
     ("C1", "catches a missing SKILL.md", _rename_entry_file),
     ("S1", "blocks at the top line tier",
      _edit("SKILL.md", lambda s: s + "\n" * 1100)),
+    # Body cut to the sections above Gotchas, then padded past 700 lines: well under every
+    # token tier, so only the line tier can block it however SKILL.md grows.
+    ("S1", "blocks at the P2 line tier",
+     _edit("SKILL.md", lambda s: s[:s.index("\n## Gotchas")] + "\n" * 800)),
     ("S1", "blocks at the top token tier",
      _edit("SKILL.md", lambda s: s + "\n" + "x" * 60000)),
 ]
@@ -606,7 +873,13 @@ def selftest() -> int:
 
             proc = subprocess.run([sys.executable, str(work / script.relative_to(REPO_ROOT))],
                                   capture_output=True, text=True)
-            if proc.returncode != 1:
+            if rule == "clean":
+                # A false-positive guard: valid input the linter must not block.
+                if proc.returncode == 0:
+                    print(f"  PASS    {title}")
+                    continue
+                print(f"  FAIL    {title} — linter exited {proc.returncode} on valid input, expected 0")
+            elif proc.returncode != 1:
                 print(f"  FAIL    {title} — linter exited {proc.returncode}, expected 1")
             elif not _names_blocking(proc.stdout, rule):
                 print(f"  FAIL    {title} — exited 1 with no blocking {rule} finding; "

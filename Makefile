@@ -8,7 +8,7 @@
 
 REPO       := $(CURDIR)
 SKILL      := $(REPO)/skills/feature-lifecycle
-LINT       := python3 $(REPO)/tools/lint.py
+LINT       := python3 "$(REPO)/tools/lint.py"
 
 CLAUDE_DIR := $(HOME)/.claude/skills
 CODEX_DIR  := $(HOME)/.codex/skills
@@ -52,7 +52,7 @@ check: lint selftest
 # and that the grader names each mutation. It runs no model and says nothing about
 # agent behaviour, so it stays out of `check` (tests/adversarial/README.md).
 eval:
-	@python3 $(REPO)/tests/adversarial/evaluate.py --selftest
+	@python3 "$(REPO)/tests/adversarial/evaluate.py" --selftest
 
 # GitHub Pages serves docs/ as static files on `main`; this only previews the same
 # tree locally, so what you see here is what the published site is.
@@ -62,9 +62,12 @@ pages:
 
 # $(1) = CLI skills directory. Only ever creates or removes a link named `feature-lifecycle`
 # that points at this repo; a real path already sitting there is reported, never
-# overwritten.
+# overwritten. `set -e`: a failed mkdir or ln stops the recipe instead of reporting
+# "linked", and a SKILL path that does not exist (`make -f` from another directory
+# makes $(CURDIR) the wrong repo) is refused rather than linked to.
 define do_link
-t="$(1)"; d="$$t/feature-lifecycle"; p=$$(dirname "$$t"); \
+set -e; t="$(1)"; d="$$t/feature-lifecycle"; p=$$(dirname "$$t"); \
+if [ ! -d "$(SKILL)" ]; then echo "ERROR   $(SKILL) does not exist — run make from the repo root"; exit 1; fi; \
 if [ ! -d "$$p" ]; then echo "skip    $$t — $$p does not exist"; exit 0; fi; \
 mkdir -p "$$t"; \
 if [ -L "$$d" ]; then \
@@ -107,12 +110,18 @@ status:
 #
 # An existing hook this target did not write is reported, never overwritten — the
 # same rule `do_link` applies to a path already sitting where a link would go.
+#
+# The hooks directory is git's answer, not `.git/hooks`: with core.hooksPath set git
+# runs hooks from that path and ignores `.git/hooks`, and in a linked worktree `.git`
+# is a file. `set -e` keeps a failed write from reporting "installed".
 hooks:
-	@d="$(REPO)/.git/hooks/pre-commit"; \
+	@set -e; \
+	if [ ! -d "$(SKILL)" ]; then echo "ERROR   $(SKILL) does not exist — run make from the repo root"; exit 1; fi; \
+	cd "$(REPO)"; h=$$(git rev-parse --git-path hooks); d="$$h/pre-commit"; \
 	if [ -e "$$d" ] && ! grep -q "installed by feature-lifecycle-skill" "$$d" 2>/dev/null; then \
 	  echo "ERROR   $$d exists and was not installed by this target — move it, then re-run"; exit 1; \
 	fi; \
-	mkdir -p "$(REPO)/.git/hooks"; \
+	mkdir -p "$$h"; \
 	printf '%s\n' \
 	  '#!/bin/sh' \
 	  '# installed by feature-lifecycle-skill: make hooks' \
@@ -123,16 +132,12 @@ hooks:
 	  '# the scratch tree goes even when a step below dies under `set -e`' \
 	  'trap "rm -rf \"$$tmp\"" EXIT INT TERM' \
 	  'git checkout-index -a -f --prefix="$$tmp/"' \
-	  '# the selftest only when the checker itself changed' \
-	  'if git diff --cached --name-only | grep -q "^tools/"; then' \
-	  '  goal=check' \
-	  'else' \
-	  '  goal=lint' \
-	  'fi' \
+	  '# the selftest whenever the checker or the text its mutations edit changed:' \
+	  '# a mutation anchored to SKILL.md or README text breaks when that text moves' \
+	  'goal=lint' \
+	  'git diff --cached --quiet -- tools skills README.md || goal=check' \
 	  '# the corpus grader only when the corpus or its grader changed' \
-	  'if git diff --cached --name-only | grep -q "^tests/adversarial/"; then' \
-	  '  goal="$$goal eval"' \
-	  'fi' \
+	  'git diff --cached --quiet -- tests/adversarial || goal="$$goal eval"' \
 	  'status=0' \
 	  'make -C "$$tmp" --no-print-directory $$goal || status=$$?' \
 	  'exit $$status' \
