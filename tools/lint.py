@@ -15,19 +15,23 @@ checked mechanically rather than remembered.
       script and nothing from CJK onward (accented Latin prose and typographic
       punctuation pass)
   F3  no frontmatter keys outside the allowlist
+  F4  the frontmatter is YAML a strict loader accepts, in the subset this parser reads:
+      `key: value` lines, no tab indentation, no `: ` or ` #` inside an unquoted
+      value, and no escape sequence inside a double-quoted one (an escape decodes to
+      text F2 never saw)
   N1  skill folder name == frontmatter `name`
   C1  the entry file is exactly `SKILL.md`
   C2  no README.md inside the skill folder (it belongs at the repo root)
   H1  CAPABILITIES_SUMMARY block present, with the COLLABORATION_PATTERNS,
       BIDIRECTIONAL_PARTNERS and PROJECT_AFFINITY markers inside that same
       `<!-- -->` comment — a marker that drifted out of it is not a marker
-  ST1 required section headings present, outside code fences
+  ST1 required `## ` section headings present, outside code fences and HTML comments
   L1  no `_common/<path>` reference anywhere, at any depth, extension or not —
       the standalone invariant
   L2  every `reference/<file>.md` cited by any file in the skill resolves on disk, and
       every `skills/<name>/…` or bare `reference/<file>.md` path the repo-root
       README.md names exists
-  L3  every file under `reference/` is cited by at least one *other* file
+  L3  every file under `reference/` is reachable from SKILL.md by following citations
   L4  every `§ <section>` citation — `reference/x.md` § Heading, `SKILL.md` § Heading,
       a bare § Heading in its own file, or a numbered `§N` — names a heading that
       exists in the file it points at, outside code fences
@@ -182,9 +186,46 @@ def parse_frontmatter(text: str) -> tuple[dict[str, str], str]:
     return {k: _unquote(" ".join(v).strip()) for k, v in parts.items()}, body
 
 
-def headings(text: str) -> list[str]:
-    """Markdown headings outside fenced code blocks. A `### Residual Ledger` inside a
-    fenced template renders as literal text, so nothing can be cited to it."""
+BLOCK_INDICATORS = (">", ">-", ">+", "|", "|-", "|+")
+
+
+def frontmatter_errors(text: str) -> list[str]:
+    """Constructs `parse_frontmatter` reads leniently but a strict YAML loader rejects or
+    reads differently. A CLI that loads the frontmatter with a real YAML parser fails to
+    load the skill, or routes on text the F2 checks never inspected, while lint stays
+    green — so each one is a finding rather than a tolerance."""
+    if not text.startswith("---\n") or text.find("\n---\n", 4) == -1:
+        return []
+    errors: list[str] = []
+    plain = False  # the current value is an unquoted plain scalar
+    for line in text[4:text.find("\n---\n", 4)].splitlines():
+        if not line.strip() or line.lstrip().startswith("#"):
+            continue
+        if line[:1] in (" ", "\t"):
+            if line[: len(line) - len(line.lstrip())].count("\t"):
+                errors.append(f"tab in indentation: `{line.strip()[:40]}`")
+            elif plain and (": " in line or " #" in line):
+                errors.append(f"`: ` or ` #` in an unquoted continuation line: `{line.strip()[:40]}`")
+            continue
+        m = re.match(r"^([^\s:#][^:]*):(?:\s+(.*))?$", line)
+        if not m:
+            errors.append(f"not a `key: value` line: `{line[:40]}`")
+            plain = False
+            continue
+        value = (m.group(2) or "").strip()
+        plain = bool(value) and value[0] not in "\"'" and value not in BLOCK_INDICATORS
+        if plain and (": " in value or " #" in value):
+            errors.append(f"`{m.group(1)}` is unquoted and contains `: ` or ` #` — quote it")
+        if value.startswith('"') and "\\" in value:
+            errors.append(f"`{m.group(1)}` carries an escape sequence — write the character itself")
+    return errors
+
+
+def headings(text: str, level: int | None = None) -> list[str]:
+    """Markdown headings outside fenced code blocks and HTML comments, optionally only
+    those of one level. A `### Residual Ledger` inside a fenced template, or a heading
+    inside `<!-- -->`, renders as nothing, so nothing can be cited to it."""
+    text = re.sub(r"<!--.*?-->", lambda m: "\n" * m.group(0).count("\n"), text, flags=re.S)
     found: list[str] = []
     fence = ""  # the opening run of backticks or tildes; a fence closes only on its own kind
     for line in text.splitlines():
@@ -199,9 +240,9 @@ def headings(text: str) -> list[str]:
                 continue
         if not fence:
             # A closing `#` run counts only after a space: `## Use C#` is "Use C#".
-            m = re.match(r"^#{1,6}\s+(.+?)(?:\s+#+)?\s*$", line)
-            if m:
-                found.append(m.group(1))
+            m = re.match(r"^(#{1,6})\s+(.+?)(?:\s+#+)?\s*$", line)
+            if m and (level is None or len(m.group(1)) == level):
+                found.append(m.group(2))
     return found
 
 
@@ -310,6 +351,10 @@ def lint_skill(skill_dir: Path, out: list[Finding]) -> None:
             out.append(Finding("P1", "F2", rel(skill_md),
                                f"description contains non-Latin characters: {''.join(sorted(non_latin))}"))
 
+    # F4
+    for error in frontmatter_errors(text):
+        out.append(Finding("P1", "F4", rel(skill_md), f"frontmatter is not strict YAML: {error}"))
+
     # F3
     for key in sorted(set(fm) - FRONTMATTER_KEYS):
         out.append(Finding("P1", "F3", rel(skill_md), f"frontmatter key `{key}` is not allowed"))
@@ -324,9 +369,12 @@ def lint_skill(skill_dir: Path, out: list[Finding]) -> None:
             out.append(Finding("P2", "H1", rel(skill_md), f"{where} `{marker}` marker"))
 
     # ST1
-    present = {h.strip() for h in headings(body)}
+    # A level-2 heading that is the section's name, or starts with it as a whole word:
+    # `### Collaboration notes` or `## Collaborations` is not the section.
+    present = {h.strip().lower() for h in headings(body, level=2)}
     for required in REQUIRED_HEADINGS:
-        if not any(required.lower() in h.lower() for h in present):
+        name = required.lower()
+        if not any(h == name or h.startswith(name + " ") for h in present):
             out.append(Finding("P2", "ST1", rel(skill_md), f"missing required section `## {required}`"))
 
     # S1
@@ -349,7 +397,7 @@ def lint_links(skill_dir: Path, out: list[Finding]) -> None:
     every § citation landing on a heading that exists."""
     rel = lambda p: str(p.relative_to(REPO_ROOT))  # noqa: E731
     files = sorted(p for p in skill_dir.rglob("*.md") if p.is_file())
-    cited: set[str] = set()
+    cites: dict[str, set[str]] = {}
     heading_cache: dict[Path, list[str]] = {}
 
     for path in files:
@@ -390,7 +438,7 @@ def lint_links(skill_dir: Path, out: list[Finding]) -> None:
                 # A file naming its own path — every reference file here carries a
                 # `**Read when:**` header — does not make itself reachable.
                 if match != own:
-                    cited.add(match)
+                    cites.setdefault(own, set()).add(match)
                 if not (skill_dir / match).is_file():
                     out.append(Finding("P1", "L2", f"{rel(path)}:{lineno}",
                                        f"references `{match}`, which does not exist"))
@@ -411,13 +459,20 @@ def lint_links(skill_dir: Path, out: list[Finding]) -> None:
                     out.append(Finding("P1", "L2", f"README.md:{lineno}",
                                        f"names `{match}`, which is not a file in the skill"))
 
-    # L3
+    # L3 — reachability, not mere citation: two files that cite only each other are
+    # both cited, and an agent starting from SKILL.md still never opens either.
+    reached, frontier = {"SKILL.md"}, ["SKILL.md"]
+    while frontier:
+        for target in cites.get(frontier.pop(), ()):
+            if target not in reached:
+                reached.add(target)
+                frontier.append(target)
     ref_dir = skill_dir / "reference"
     if ref_dir.is_dir():
         for path in sorted(ref_dir.glob("*.md")):
-            if f"reference/{path.name}" not in cited:
+            if f"reference/{path.name}" not in reached:
                 out.append(Finding("P2", "L3", rel(path),
-                                   "no other file in the skill cites this — it is unreachable at runtime"))
+                                   "not reachable from SKILL.md by following citations — an agent never opens it"))
 
 
 def run(strict: bool) -> int:
@@ -485,6 +540,14 @@ def _break_readme_layout_row(skill: Path) -> bool:
     return after != before
 
 
+def _add_mutual_orphans(skill: Path) -> bool:
+    (skill / "reference" / "orphan-a.md").write_text(
+        "# orphan a\n\nSee `reference/orphan-b.md`.\n", encoding="utf-8")
+    (skill / "reference" / "orphan-b.md").write_text(
+        "# orphan b\n\nSee `reference/orphan-a.md`.\n", encoding="utf-8")
+    return True
+
+
 def _add_readme(skill: Path) -> bool:
     (skill / "README.md").write_text("# feature-lifecycle\n", encoding="utf-8")
     return True
@@ -536,6 +599,18 @@ MUTATIONS = [
      _set_description('"Use when the feature is \u9ad8\u30ea\u30b9\u30af and expensive to reverse."')),
     ("F2", "rejects a non-Latin script below the CJK range",
      _set_description('"Use when the feature is \u0432\u044b\u0441\u043e\u043a\u0438\u0439 risk and expensive to reverse."')),
+    ("F2", "rejects CJK punctuation in the description",
+     _set_description('"Use when the feature is costly to reverse\u3002"')),
+    ("F2", "rejects a non-ASCII digit in the description",
+     _set_description('"Use when \u0663 teams depend on the feature."')),
+    ("F1", "rejects frontmatter with no name",
+     _edit("SKILL.md", lambda s: s.replace("name: feature-lifecycle\n", "", 1))),
+    ("F4", "rejects an unquoted description containing `: `",
+     _set_description("Use when: the feature is costly to discover late.")),
+    ("F4", "rejects a key line with no space after the colon",
+     _edit("SKILL.md", lambda s: s.replace("name: feature-lifecycle", "name:feature-lifecycle", 1))),
+    ("F4", "rejects an escape sequence that decodes past the F2 checks",
+     _set_description('"Use when the feature is \\u9ad8 risk and costly to reverse."')),
     ("F3", "rejects an unknown frontmatter key",
      _edit("SKILL.md", lambda s: s.replace("name: feature-lifecycle", "name: feature-lifecycle\nversion: 2", 1))),
     ("H1", "catches a dropped marker",
@@ -549,8 +624,14 @@ MUTATIONS = [
     ("L4", "keeps a heading's own trailing # (`C#`), so `§ … C` does not resolve to it",
      _edit("SKILL.md", lambda s: s.replace("(§ Orchestrator Sub-Mode)", "(§ Orchestrator Sub-Mode C)", 1)
            .replace("\n## Orchestrator Sub-Mode\n", "\n## Orchestrator Sub-Mode C#\n", 1))),
+    ("ST1", "requires the section at level 2",
+     _edit("SKILL.md", lambda s: s.replace("\n## Collaboration\n", "\n### Collaboration notes\n", 1))),
+    ("ST1", "ignores a required heading inside an HTML comment",
+     _edit("SKILL.md", lambda s: s.replace("\n## Core Contract\n", "\n<!--\n## Core Contract\n-->\n", 1))),
     ("ST1", "ignores a required heading inside a tilde fence",
      _edit("SKILL.md", lambda s: s.replace("\n## Core Contract\n", "\n~~~\n## Core Contract\n~~~\n", 1))),
+    ("L1", "catches a _common path with no extension",
+     _edit("SKILL.md", lambda s: s.replace("\n## Workflow\n", "\nSee `_common/OPERATIONAL`.\n\n## Workflow\n", 1))),
     ("L1", "catches a reintroduced _common path",
      _edit("SKILL.md", lambda s: s.replace("\n## Workflow\n", "\nSee `_common/OPERATIONAL.md`.\n\n## Workflow\n", 1))),
     ("L2", "catches a dead reference link",
@@ -573,12 +654,15 @@ MUTATIONS = [
          "`reference/engine-roster.md` § Phase → Role Map owns", "`contracts.md` § Phase → Role Map owns", 1))),
     ("L3", "catches an uncited reference file", _add_orphan_reference),
     ("L3", "catches a reference file that cites only itself", _add_self_citing_reference),
+    ("L3", "catches two reference files that cite only each other", _add_mutual_orphans),
     ("C2", "catches a README inside the skill folder", _add_readme),
     ("N1", "catches a name that no longer matches its folder",
      _edit("SKILL.md", lambda s: s.replace("name: feature-lifecycle", "name: feature-lifecycle-lifecycle", 1))),
     ("C1", "catches a missing SKILL.md", _rename_entry_file),
     ("S1", "blocks at the top line tier",
      _edit("SKILL.md", lambda s: s + "\n" * 1100)),
+    ("S1", "blocks at the P2 line tier",
+     _edit("SKILL.md", lambda s: s + "\n" * 450)),
     ("S1", "blocks at the top token tier",
      _edit("SKILL.md", lambda s: s + "\n" + "x" * 60000)),
 ]
