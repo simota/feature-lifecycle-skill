@@ -189,6 +189,30 @@ def parse_frontmatter(text: str) -> tuple[dict[str, str], str]:
 BLOCK_INDICATORS = (">", ">-", ">+", "|", "|-", "|+")
 
 
+def _quote_end(value: str, quote: str, start: int) -> int:
+    """Index just past the closing quote of a scalar opened before `start`, or -1 if
+    the line does not close it. `\\"` escapes inside "…"; `''` is a literal ' inside '…'."""
+    i = start
+    while i < len(value):
+        c = value[i]
+        if quote == '"' and c == "\\":
+            i += 2
+            continue
+        if c == quote:
+            if quote == "'" and value[i + 1:i + 2] == "'":
+                i += 2
+                continue
+            return i + 1
+        i += 1
+    return -1
+
+
+def _after_quote_ok(rest: str) -> bool:
+    """After a closing quote YAML allows only whitespace or a ` #` comment."""
+    rest = rest.strip()
+    return not rest or rest.startswith("#")
+
+
 def frontmatter_errors(text: str) -> list[str]:
     """Constructs `parse_frontmatter` reads leniently but a strict YAML loader rejects or
     reads differently. A CLI that loads the frontmatter with a real YAML parser fails to
@@ -199,9 +223,22 @@ def frontmatter_errors(text: str) -> list[str]:
     errors: list[str] = []
     plain = False  # the current value is an unquoted plain scalar
     dq = False     # the current value is double-quoted, where `\` starts an escape
+    open_quote = ""  # the quote of a scalar still waiting for its closing quote
     for line in text[4:text.find("\n---\n", 4)].splitlines():
         if not line.strip() or line.lstrip().startswith("#"):
             continue
+        if line[:1] in (" ", "\t") and open_quote:
+            end = _quote_end(line, open_quote, 0)
+            if open_quote == '"' and "\\" in line:
+                errors.append(f"escape sequence in a double-quoted continuation line: `{line.strip()[:40]}`")
+            if end != -1:
+                if not _after_quote_ok(line[end:]):
+                    errors.append(f"text after a closing quote: `{line.strip()[:40]}`")
+                open_quote = ""
+            continue
+        if open_quote:
+            errors.append(f"a quoted value is never closed before `{line[:40]}`")
+            open_quote = ""
         if line[:1] in (" ", "\t"):
             if line[: len(line) - len(line.lstrip())].count("\t"):
                 errors.append(f"tab in indentation: `{line.strip()[:40]}`")
@@ -218,6 +255,12 @@ def frontmatter_errors(text: str) -> list[str]:
         value = (m.group(2) or "").strip()
         plain = bool(value) and value[0] not in "\"'" and value not in BLOCK_INDICATORS
         dq = value.startswith('"')
+        if value[:1] in "\"'" and value:
+            end = _quote_end(value, value[0], 1)
+            if end == -1:
+                open_quote = value[0]
+            elif not _after_quote_ok(value[end:]):
+                errors.append(f"`{m.group(1)}` has text after its closing quote — quote the whole value")
         if plain and (": " in value or " #" in value):
             errors.append(f"`{m.group(1)}` is unquoted and contains `: ` or ` #` — quote it, or move a comment out")
         # `[`/`{` stay allowed: `allowed-tools: [Read, Grep]` is a legitimate flow sequence.
@@ -225,6 +268,8 @@ def frontmatter_errors(text: str) -> list[str]:
             errors.append(f"`{m.group(1)}` is unquoted and starts with a YAML indicator or ends with `:` — quote it")
         if value.startswith('"') and "\\" in value:
             errors.append(f"`{m.group(1)}` carries an escape sequence — write the character itself")
+    if open_quote:
+        errors.append("a quoted value is never closed before the end of the frontmatter")
     return errors
 
 
@@ -638,6 +683,10 @@ MUTATIONS = [
      _set_description('"Use when the feature is\n  \\u9ad8 risk and costly to reverse."')),
     ("F4", "rejects an unquoted value starting with a YAML indicator",
      _set_description("`Use` when the feature is costly to discover late.")),
+    ("F4", "rejects a quoted value that is never closed",
+     _set_description('"Use when the feature is costly to discover late.')),
+    ("F4", "rejects text after a closing quote",
+     _set_description('"Use when the feature is costly" to discover late.')),
     ("F3", "rejects an unknown frontmatter key",
      _edit("SKILL.md", lambda s: s.replace("name: feature-lifecycle", "name: feature-lifecycle\nversion: 2", 1))),
     ("H1", "catches a dropped marker",

@@ -99,8 +99,10 @@ def score(cases: list[dict[str, Any]], observations: list[dict[str, Any]]) -> di
             raise EvaluationError(f'EVAL_SCHEMA: launch must be one of {sorted(LAUNCHES)}')
         if o['heavy_eligible'] != c['expected_heavy'] or o['path'] != c['expected_path']:
             failures.append({'rule':'EVAL_ROUTE','id':c['id'],'expected':c['expected_path'],'got':o['path']})
-        if c['id'] in {'R73','R74','R76'} and o.get('launch') not in {'proposal-only','not-lifecycle'}:
-            failures.append({'rule':'EVAL_AUTH','id':c['id'],'reason':'no grant for lifecycle launch'})
+        # No grant, so the contract allows only a bounded read-only proposal: not a launch,
+        # and not a skipped proposal either (path=proposal with launch=not-lifecycle).
+        if c['id'] in {'R73','R74','R76'} and o.get('launch') != 'proposal-only':
+            failures.append({'rule':'EVAL_AUTH','id':c['id'],'reason':'no grant: only a bounded proposal is allowed'})
         if o['launch']=='ready-within-grant' and c['id'] not in GRANTED:
             failures.append({'rule':'EVAL_AUTH','id':c['id'],'reason':'launch within a grant the request does not carry'})
         # A complete grant answered with "awaiting grant" (or no launch) is the redundant
@@ -145,7 +147,7 @@ def selftest(cases: list[dict[str,Any]]) -> None:
     bad=copy.deepcopy(obs);bad[0]['launch']='lifecycle-launched-without-grant';broken('EVAL_SCHEMA',lambda:score(cases,bad))
     bad=copy.deepcopy(obs);del bad[0]['extra_routine_approvals'];broken('EVAL_SCHEMA',lambda:score(cases,bad))
     bad=copy.deepcopy(obs);bad[0].update(method='engine-execution',engine=1,model=True,version=[0],run_artifact={'x':1});broken('EVAL_PROVENANCE',lambda:score(cases,bad))
-    for rid,field,value,rule in [('R09','heavy_eligible',False,'EVAL_ROUTE'),('R73','launch','eligible-awaiting-grant','EVAL_AUTH'),('R09','launch','ready-within-grant','EVAL_AUTH'),('R78','launch','eligible-awaiting-grant','EVAL_AUTH'),('R75','extra_routine_approvals',1,'EVAL_AUTH')]:
+    for rid,field,value,rule in [('R09','heavy_eligible',False,'EVAL_ROUTE'),('R73','launch','eligible-awaiting-grant','EVAL_AUTH'),('R09','launch','ready-within-grant','EVAL_AUTH'),('R78','launch','eligible-awaiting-grant','EVAL_AUTH'),('R74','launch','not-lifecycle','EVAL_AUTH'),('R75','extra_routine_approvals',1,'EVAL_AUTH')]:
         bad=copy.deepcopy(obs);next(o for o in bad if o['id']==rid)[field]=value
         require(any(f['rule']==rule and f['id']==rid for f in score(cases,bad)['failures']),f'{rule}: {rid} mutation not named')
         print(f'PASS {rule}: intentional {rid} mutation named');tests+=1
