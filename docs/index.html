@@ -627,10 +627,10 @@ db_change=  budget=</pre>
           <li data-only="standard full">interaction-design</li>
           <li data-only="standard full">microcopy</li>
           <li data-req="cond" data-only="standard full">motion-spec<span class="q">?</span></li>
-          <li data-req="cond">design-file-extraction<span class="q">?</span></li>
+          <li data-req="cond" data-only="standard full">design-file-extraction<span class="q">?</span></li>
           <li data-only="standard full">prototype</li>
           <li data-only="standard full">friction-walkthrough</li>
-          <li data-req="cond">i18n-strategy<span class="q">?</span></li>
+          <li data-req="cond" data-only="standard full">i18n-strategy<span class="q">?</span></li>
           <li data-req="cond" data-only="standard full">mockup-to-code<span class="q">?</span></li>
         </ul>
       </div>
@@ -649,7 +649,7 @@ db_change=  budget=</pre>
         <ul class="rows">
           <li>failure-mode-analysis</li>
           <li>blast-radius-analysis</li>
-          <li>friction-walkthrough</li>
+          <li data-only="standard full">friction-walkthrough</li>
           <li>security-review</li>
         </ul>
       </div>
@@ -695,7 +695,7 @@ db_change=  budget=</pre>
       <div class="pc-gate">
         <span class="lab">exit gate</span>
         <code>unmet_required == 0 ∧ non_goal_violations == 0 ∧ required_evidence_met<br>(percentages summarize only; integration_evidence: E5 | unavailable, with missing required evidence blocking)</code>
-        <p class="fail"><b>on failure</b>Return to the first wrong decision; only code defects and unratified additions go directly to P6. Acceptance-triggered re-entry remains bounded to 2 total. Retain unaffected artifacts; missing external evidence is blocked-external. Never ship with an unmet must-have AC, and never ship an unratified scope violation.</p>
+        <p class="fail"><b>on failure</b>Return to the first wrong decision; only code defects and unratified additions go directly to P6. Acceptance-triggered re-entry remains bounded to 2 total. A missing evidence requirement or an unjustified low floor returns to P5; a changed goal reopens launch authority. Retain unaffected artifacts; missing external evidence is blocked-external. Never ship with an unmet must-have AC, and never ship an unratified scope violation.</p>
       </div>
     </article>
 

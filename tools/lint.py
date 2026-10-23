@@ -16,9 +16,9 @@ checked mechanically rather than remembered.
       punctuation pass)
   F3  no frontmatter keys outside the allowlist
   F4  the frontmatter is YAML a strict loader accepts, in the subset this parser reads:
-      `key: value` lines, no tab indentation, no `: ` or ` #` inside an unquoted
-      value, and no escape sequence inside a double-quoted one (an escape decodes to
-      text F2 never saw)
+      `key: value` lines, no tab and no whitespace other than the space, no `: ` or
+      ` #` inside an unquoted value, no plain value YAML loads as a non-string, and no
+      escape sequence inside a double-quoted one (an escape decodes to text F2 never saw)
   N1  skill folder name == frontmatter `name`
   C1  the entry file is exactly `SKILL.md`
   C2  no README.md inside the skill folder (it belongs at the repo root)
@@ -152,9 +152,9 @@ def parse_frontmatter(text: str) -> tuple[dict[str, str], str]:
     """Return (frontmatter mapping, body). Missing frontmatter yields an empty map.
 
     A value may span lines two ways, and truncating either one hands the F2 checks
-    a fragment to inspect while they report on the whole: a block scalar (`>`/`|`),
-    where a blank line is a paragraph break and ends nothing, and a plain scalar,
-    which YAML folds across more-indented lines until a blank or dedented one.
+    a fragment to inspect while they report on the whole: a block scalar (`>`/`|`)
+    and a flow scalar (plain or quoted), which YAML folds across more-indented lines
+    until a dedented one. In both a blank line is a paragraph break and ends nothing.
     """
     if not text.startswith("---\n"):
         return {}, text
@@ -165,29 +165,42 @@ def parse_frontmatter(text: str) -> tuple[dict[str, str], str]:
 
     parts: dict[str, list[str]] = {}
     blocks: set[str] = set()  # keys whose value is a `>`/`|` block scalar: never unquoted
+    literal: set[str] = set()  # keys whose value is a `|` block scalar: every newline kept
     key: str | None = None
-    scalar = False
 
     for line in block.splitlines():
         if not line.strip():
-            if not scalar:
-                key = None
+            if key is not None:
+                parts[key].append("")
             continue
         if line[:1] in (" ", "\t"):
             if key is not None:
                 parts[key].append(line.strip())
             continue
         if line.startswith("#") or ":" not in line:
-            key, scalar = None, False
+            key = None
             continue
         raw_key, _, value = line.partition(":")
         key, value = raw_key.strip(), value.strip()
-        scalar = value in (">", ">-", ">+", "|", "|-", "|+")
+        scalar = value in BLOCK_INDICATORS
         parts[key] = [] if scalar else [value]
         (blocks.add if scalar else blocks.discard)(key)
+        (literal.add if value.startswith("|") else literal.discard)(key)
 
-    return {k: " ".join(v).strip() if k in blocks else _decode(" ".join(v).strip())
+    return {k: _fold(v, k in literal).strip() if k in blocks else _decode(_fold(v).strip())
             for k, v in parts.items()}, body
+
+
+def _fold(lines: list[str], literal: bool = False) -> str:
+    """Join a value's lines as YAML does: a literal block keeps every line break; a
+    folded or flow scalar joins adjacent lines with a space and reads each blank line
+    as one "\\n". Indentation is not reconstructed."""
+    if literal:
+        return "\n".join(lines)
+    out = lines[0] if lines else ""
+    for prev, line in zip(lines, lines[1:]):
+        out += "\n" if not line else line if not prev else " " + line
+    return out
 
 
 def _decode(value: str) -> str:
@@ -233,9 +246,14 @@ def _after_quote_ok(rest: str) -> bool:
 
 
 #: Plain scalars YAML 1.1 loads as something other than a string: a CLI reading `name: yes`
-#: gets a boolean, `model: 4` a number, `description: ~` nothing.
+#: gets a boolean, `model: 4` a number, `description: ~` nothing, and `name: 2026-01-01`
+#: — kebab-case, so F1 passes it — a date. Hex, binary and base-60 (`1:30`) are numbers too.
 NON_STRING_PLAIN = re.compile(
-    r"^(?:y|yes|n|no|true|false|on|off|null|~|[-+]?(?:\d[\d_]*)?\.?\d[\d_]*(?:e[-+]?\d+)?|\.inf|\.nan)$",
+    r"^(?:y|yes|n|no|true|false|on|off|null|~"
+    r"|[-+]?(?:\d[\d_]*)?\.?\d[\d_]*(?:e[-+]?\d+)?|[-+]?\d[\d_]*\.[\d_]*(?:e[-+]?\d+)?|[-+]?\.inf|\.nan"
+    r"|[-+]?0x[\da-f_]+|[-+]?0b[01_]+|[-+]?[1-9][\d_]*(?::[0-5]?\d)+|[-+]?\d[\d_]*(?::[0-5]?\d)+\.[\d_]*"
+    r"|\d{4}-\d\d-\d\d"
+    r"|\d{4}-\d\d?-\d\d?(?:t|[ \t]+)\d\d?:\d\d:\d\d(?:\.\d*)?(?:[ \t]*(?:z|[-+]\d\d?(?::\d\d)?))?)$",
     re.I)
 
 
@@ -257,7 +275,9 @@ def frontmatter_errors(text: str) -> list[str]:
     block = False    # the current value is a `>`/`|` block scalar: its lines are all content
     pending = False  # `key:` with nothing after it: the next indented line starts the value
     block_indent = 0  # indentation of a block scalar's first content line
+    block_lead = 0    # widest blank line seen before that first content line
     closed = False    # a quoted value already closed: nothing may continue it
+    comment = False   # the last non-blank line was a top-level comment
 
     def start(value: str, whole: str) -> None:
         """Classify a value's first line; `whole` is the full scalar text when it is one line."""
@@ -287,21 +307,41 @@ def frontmatter_errors(text: str) -> list[str]:
         if dq and "\\" in value:
             errors.append(f"`{key}` carries an escape sequence — write the character itself")
 
-    lines = text[4:text.find("\n---\n", 4)].splitlines()
+    raw = text[4:text.find("\n---\n", 4)]
+    # YAML's whitespace is the space and the tab, and its line breaks are \n and \r. Python's
+    # strip() and splitlines() also eat NBSP, U+2028, \x0c and the rest, so the parser here
+    # and a YAML loader split and trim the same bytes differently — or the loader refuses them.
+    odd = sorted({c for c in raw if c.isspace() and c not in " \t\n"})
+    if odd:
+        errors.append("whitespace a YAML loader does not read as a space or line break: "
+                      + " ".join(f"U+{ord(c):04X}" for c in odd) + " — write a plain space")
+    lines = raw.splitlines()
     for i, line in enumerate(lines):
+        # A tab anywhere — indentation, inside or after a value, on a blank-looking line — is
+        # a ScannerError to PyYAML; the CLI fails to load the skill while the parser here
+        # reads it fine. A tab in indentation also hides the line's real indentation level.
+        if "\t" in line:
+            errors.append(f"tab character — write spaces: `{line.strip()[:40]}`")
+            if not line.strip() or "\t" in line[: len(line) - len(line.lstrip())]:
+                continue
         if not line.strip():
+            if block and not block_indent:
+                block_lead = max(block_lead, len(line))
             continue
-        indented = line[:1] in (" ", "\t")
+        indented = line[:1] == " "
         if line.lstrip().startswith("#") and not open_quote and not block and not closed:
             # A top-level comment is skipped by both parsers. An indented one is a YAML
             # comment too, but parse_frontmatter appends it to the value above it, so
             # lint would inspect text a CLI never sees.
             if indented:
                 errors.append(f"indented comment read as part of the value above: `{line.strip()[:40]}`")
+            comment = not indented
             continue
-        if indented and line[: len(line) - len(line.lstrip())].count("\t"):
-            errors.append(f"tab in indentation: `{line.strip()[:40]}`")
-            continue
+        # An indented line after a top-level comment: YAML rejects it after a value, and
+        # after a bare `key:` reads it as the value parse_frontmatter has already dropped.
+        if indented and comment:
+            errors.append(f"indented line after a top-level comment: `{line.strip()[:40]}`")
+        comment = False
         if indented and closed and not line.lstrip().startswith("#"):
             errors.append(f"`{key}`: text continues after the closing quote: `{line.strip()[:40]}`")
             continue
@@ -322,6 +362,10 @@ def frontmatter_errors(text: str) -> list[str]:
             indent = len(line) - len(line.lstrip())
             if not block_indent:
                 block_indent = indent
+                # YAML takes a block's indentation from its first content line and rejects
+                # a leading blank line indented deeper than that.
+                if block_lead > indent:
+                    errors.append(f"blank line before a block scalar's first line is indented deeper than it: `{line.strip()[:40]}`")
             elif indent < block_indent:
                 errors.append(f"block scalar line indented less than its first line: `{line.strip()[:40]}`")
             continue
@@ -335,7 +379,7 @@ def frontmatter_errors(text: str) -> list[str]:
             if line.strip() in BLOCK_INDICATORS:
                 errors.append(f"`{key}`: put the block indicator `{line.strip()}` after the key, not on the next line")
             start(line.strip(), " ".join([line.strip(), *following]))
-            block_indent = 0
+            block_indent = block_lead = 0
             continue
         if indented:
             cont = line.strip()
@@ -357,7 +401,7 @@ def frontmatter_errors(text: str) -> list[str]:
                     break
                 following.append(nxt.strip())
             start(value, " ".join([value, *following]))
-            block_indent = 0
+            block_indent = block_lead = 0
         else:
             plain = dq = block = closed = False
     if open_quote:
@@ -757,6 +801,14 @@ MUTATIONS = [
      _set_description('"Use when the feature is costly to reverse\u3002"')),
     ("F2", "rejects a non-ASCII digit in the description",
      _set_description('"Use when \u0663 teams depend on the feature."')),
+    # YAML folds a blank line inside a value into "\n" and reads on; a parser that stops
+    # there hands F2 the first paragraph while a CLI routes on all of them.
+    ("F2", "reads a plain description past a blank line",
+     _set_description("Use when the feature is costly to discover late.\n\n  \u9ad8\u30ea\u30b9\u30af and expensive to reverse.")),
+    ("F2", "reads a quoted description past a blank line",
+     _set_description('"Use when the feature is costly to discover late.\n\n  It is <b>high-stakes</b>."')),
+    ("clean", "a description folded over a blank line is valid",
+     _set_description("Use when the feature is costly to discover late.\n\n  Settled builds take a narrower path.")),
     ("F1", "rejects frontmatter with no name",
      _edit("SKILL.md", lambda s: s.replace("name: feature-lifecycle\n", "", 1))),
     ("F4", "rejects an unquoted description containing `: `",
@@ -787,6 +839,19 @@ MUTATIONS = [
      _set_description("\n  # Use when the feature is costly to discover late")),
     ("F4", "rejects a plain value YAML loads as a non-string",
      _edit("SKILL.md", lambda s: s.replace("name: feature-lifecycle", "name: yes", 1))),
+    # Kebab-case, so F1 passes it; YAML 1.1 loads it as a date.
+    ("F4", "rejects a plain value YAML loads as a date",
+     _edit("SKILL.md", lambda s: s.replace("name: feature-lifecycle", "name: 2026-01-01", 1))),
+    ("F4", "rejects a tab after the value",
+     _set_description("Use when the feature is costly to discover late.\t")),
+    ("F4", "rejects a tab on a blank-looking line inside the value",
+     _set_description("Use when the feature is costly\n  \t\n  to discover late.")),
+    ("F4", "rejects a value continued past a top-level comment",
+     _set_description("Use when the feature is costly\n# risk\n  to discover late.")),
+    ("F4", "rejects a block scalar whose leading blank line is indented past its text",
+     _set_description(">\n    \n  Use when the feature is costly to discover late.")),
+    ("F4", "rejects a no-break space YAML does not trim",
+     _set_description("Use when the feature is costly to discover late.\u00a0")),
     ("F3", "rejects an unknown frontmatter key",
      _edit("SKILL.md", lambda s: s.replace("name: feature-lifecycle", "name: feature-lifecycle\nversion: 2", 1))),
     ("H1", "catches a dropped marker",
