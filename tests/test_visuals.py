@@ -204,6 +204,33 @@ class ReviewFindings(RunCopy):
         blob.write_bytes(b"\xff\xfe\x00")
         self.assertEqual(visuals.main(["check", str(self.run), "--view", str(blob)]), 2)
 
+    def test_resume_value_continues_on_indented_lines(self):
+        # the shape reference/run-record.md § What `resume` Reads shows for **Re-bind:**
+        self.edit("RUN.md", "artifacts/scope-boundary.md, artifacts/visuals.json",
+                  "artifacts/scope-boundary.md,\n             artifacts/visuals.json")
+        record, _ = visuals.load_record(self.run)
+        resume = dict(next(ps for name, ps, _ in record["run"]["sections"] if name == "Resume"))
+        self.assertTrue(resume["Re-bind"].endswith("artifacts/scope-boundary.md, artifacts/visuals.json"))
+        self.assertEqual(resume["Stopped because"], "budget ceiling reached before the loop contract was handed over")
+
+    def test_refuses_an_ac_the_criteria_do_not_define(self):
+        data = self.visuals()
+        next(m for m in data["mocks"] if m["phase"] == "P5")["acs"] = ["AC-01", "AC-99"]
+        self.write_visuals(data)
+        self.refused("AC-99 not in artifacts/acceptance-criteria.md")
+
+    def test_non_string_edge_end_exits_2(self):
+        data = self.visuals()
+        data["diagrams"][0]["edges"][0]["from"] = ["orders"]
+        self.write_visuals(data)
+        self.refused("expected a node id of this diagram")
+        self.assertEqual(visuals.main(["check", str(self.run)]), 2)
+
+    def test_fence_table_or_heading_ends_a_list(self):
+        page = visuals.md_html("- a\n```\nx\n```\n- b\n| h |\n|---|\n| c |\n- d\n## e")
+        self.assertEqual(page, "<ul><li>a</li></ul><pre><code>x</code></pre><ul><li>b</li></ul>"
+                               "<table><tr><th>h</th></tr><tr><td>c</td></tr></table><ul><li>d</li></ul><h4>e</h4>")
+
 
 class DesignSelect(RunCopy):
     """The P5 Design Select step: whole candidate designs, one selected, the rest rejected with a reason."""
