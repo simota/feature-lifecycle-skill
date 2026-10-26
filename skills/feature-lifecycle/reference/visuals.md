@@ -55,7 +55,7 @@ Rows return their visuals to the hub in their output envelope; **the hub writes 
 }
 ```
 
-Ids are `M-01`… and `D-01`…, unique across the file and never reused. A phase re-entered after a failed gate adds or replaces its own entries; the phase document's `## Re-entry` block names which. `title`, `id`, `phase`, `after` (mocks) and `kind`, `nodes` (diagrams) are required; `acs` names the ACs a P5 visual illustrates and stays empty in P2, before ACs exist. A visual's `phase` must have a document in the run.
+Ids are `M-01`… and `D-01`…, unique across the file and never reused. A phase re-entered after a failed gate adds or replaces its own entries; the phase document's `## Re-entry` block names which. `title`, `id`, `phase`, `after` (mocks) and `kind`, `nodes` (diagrams) are required; `acs` names the ACs a P5 visual illustrates, each an `AC-NN` id that `artifacts/acceptance-criteria.md` names when the file exists, and stays empty in P2, before ACs exist. A visual's `phase` must have a document in the run.
 
 ## Mocks
 

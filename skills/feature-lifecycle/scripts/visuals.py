@@ -269,8 +269,11 @@ def _common(item, where, pattern):
     _str(item, "title", where, required=True)
     for key in ("intent", "option"):
         _str(item, key, where)
-    if _strings(item, "acs", where) and item["phase"] == "P2":
+    acs = _strings(item, "acs", where)
+    if acs and item["phase"] == "P2":
         raise RecordError(f"{where}.acs: a P2 visual comes before acceptance criteria exist; leave it empty")
+    if not all(AC_ID.fullmatch(a) for a in acs):
+        raise RecordError(f"{where}.acs: expected AC ids such as AC-01")
 
 
 def _screen(screen, where, caption_required=False):
@@ -342,7 +345,7 @@ def check_diagram(diagram, where):
         if not isinstance(edge, dict):
             raise RecordError(f"{at}: expected an object")
         for end in ("from", "to"):
-            if edge.get(end) not in ids:
+            if not isinstance(edge.get(end), str) or edge[end] not in ids:
                 raise RecordError(f"{at}.{end}: expected a node id of this diagram")
         _str(edge, "label", at)
         if edge.get("change", "existing") not in CHANGES:
@@ -548,12 +551,19 @@ def sections(body):
 
 
 def parse_run(text):
-    """RUN.md: the title, the `**Key:** value` pairs of its header and of each section."""
+    """RUN.md: the title, the `**Key:** value` pairs of its header and of each section.
+
+    In a section a value continues on indented lines, as `**Re-bind:**` does in reference/run-record.md
+    § What `resume` Reads; a blank line, another `**Key:**` or a list item does not continue it. The header
+    is not folded: its last value is usually `**Status:**`, which check reads verbatim.
+    """
     title = next((line[2:].strip() for line in text.split("\n") if line.startswith("# ")), "")
     head = text.split("\n## ", 1)[0]
-    pairs = lambda s: [(m[1].strip(), m[2].strip()) for m in re.finditer(r"\*\*([^*]+?):\*\*\s*([^·\n]*)", s)]
-    return {"title": title, "header": pairs(head),
-            "sections": [(name, pairs(body), body) for name, body in sections(text)]}
+    more = r"(?:\n[ \t]+(?![-*+] |\d+\. )(?![^\n]*\*\*[^*\n]+?:\*\*)\S[^\n]*)*"
+    pairs = lambda s, fold: [(m[1].strip(), " ".join(m[2].split())) for m in re.finditer(
+        rf"\*\*([^*]+?):\*\*[ \t]*([^·\n]*{more if fold else ''})", s)]
+    return {"title": title, "header": pairs(head, False),
+            "sections": [(name, pairs(body, True), body) for name, body in sections(text)]}
 
 
 def load_record(run_dir):
@@ -610,6 +620,8 @@ def load_record(run_dir):
             f"artifacts/{p.name}" for p in (run_dir / "artifacts").glob("*.md") if p.is_file()):
         if (run_dir / rel).is_file():
             extra.append((rel, read(rel)))
+    criteria = dict(extra).get("artifacts/acceptance-criteria.md")
+    acs = list(dict.fromkeys(AC_ID.findall(criteria or "")))
     visuals = {"version": 1}
     if (run_dir / "artifacts" / "visuals.json").exists():
         try:
@@ -625,8 +637,10 @@ def load_record(run_dir):
         for item in visuals.get("mocks", []) + visuals.get("diagrams", []):
             if "0" + item["phase"][1] not in ran:
                 raise RecordError(f"{item['id']}: phase {item['phase']} has no document in this run")
-    criteria = dict(extra).get("artifacts/acceptance-criteria.md", "")
-    acs = list(dict.fromkeys(AC_ID.findall(criteria)))
+            # Design Select's "ACs drawn" counts against the criteria file; an id it lacks would vanish from it.
+            unknown = [a for a in item.get("acs", []) if a not in acs]
+            if criteria is not None and unknown:
+                raise RecordError(f"{item['id']}.acs: {', '.join(unknown)} not in artifacts/acceptance-criteria.md")
     return {"id": run_dir.name, "run": run, "docs": docs, "extra": extra, "visuals": visuals, "acs": acs}, sources
 
 
@@ -854,7 +868,8 @@ def md_html(text):
         elif re.match(r"^\s*(?:[-*]|\d+\.) ", line):
             tag = "ol" if re.match(r"^\s*\d+\.", line) else "ul"
             items = []
-            while i < len(lines) and lines[i].strip():
+            # A fence, table or heading ends the list even without a blank line before it.
+            while i < len(lines) and lines[i].strip() and not re.match(r"^(```|\||#{1,6} )", lines[i]):
                 if re.match(r"^\s*(?:[-*]|\d+\.) ", lines[i]):
                     items.append(re.sub(r"^\s*(?:[-*]|\d+\.) ", "", lines[i]))
                 else:
