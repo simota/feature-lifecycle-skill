@@ -54,11 +54,13 @@ DIRECTIONS = ("LR", "TB")
 LOCATION = re.compile(r"^[^:\x00-\x1f\x7f-\x9f]+:[1-9][0-9]*(?:-[1-9][0-9]*)?\Z")
 MAX_NODES = 40
 # Design Select (reference/visuals.md § Designs): whole candidate designs the P5 tracks drew.
-DESIGN_ID = re.compile(r"^DS-[A-Z]\Z")
+DESIGN_ID = re.compile(r"^DS-[A-D]\Z")
 DESIGN_STATUSES = ("candidate", "selected", "rejected")
 SELECTED_BY = ("user", "delegated")
 MAX_DESIGNS = 4
 AC_ID = re.compile(r"\bAC-[0-9]+\b")
+# A code fence: up to three spaces, then three or more backticks or tildes (tools/lint.py reads it alike).
+FENCE = re.compile(r"^ {0,3}(`{3,}|~{3,})")
 
 VIEWPORTS = ("mobile", "desktop")
 MOCK_HEIGHT = (120, 4000)
@@ -506,9 +508,11 @@ def parse_envelope(text, where):
     """The frontmatter of reference/run-record.md § The Document Envelope, and the body after it."""
     if not text.startswith("---\n"):
         raise RecordError(f"{where}: expected a frontmatter envelope opening with ---")
-    end = text.find("\n---", 3)
-    if end < 0:
+    # The envelope closes on a line of its own; "---more" is a value line.
+    close = re.compile(r"\n---[ \t]*(?:\n|\Z)").search(text, 3)
+    if not close:
         raise RecordError(f"{where}: the frontmatter envelope is not closed")
+    end = close.start()
     fields, key, buf = {}, None, ""
     for raw in text[4:end].split("\n") + [""]:
         line = _strip_comment(raw)
@@ -529,17 +533,26 @@ def parse_envelope(text, where):
         if not match:
             raise RecordError(f"{where}: cannot read frontmatter line {raw.strip()!r}")
         key, buf = match[1], match[2].strip()
-    body = text[end + 4:]
-    return fields, body[body.find("\n") + 1:] if "\n" in body else ""
+    return fields, text[close.end():]
+
+
+def fence_after(line, fence):
+    """The open fence once `line` is read: a fence closes only on a run of its own kind at least as long."""
+    marker = FENCE.match(line)
+    if not marker:
+        return fence
+    run = marker[1]
+    if not fence:
+        return run
+    return "" if run[0] == fence[0] and len(run) >= len(fence) and not line.strip()[len(run):] else fence
 
 
 def sections(body):
     """`## Heading` → its text, in order; text before the first heading is dropped."""
-    out, name, lines, fence = [], None, [], False
+    out, name, lines, fence = [], None, [], ""
     for line in body.split("\n"):
-        if line.startswith("```"):
-            fence = not fence
-        if not fence and line.startswith("## "):
+        inside, fence = fence, fence_after(line, fence)
+        if not inside and not fence and line.startswith("## "):
             if name is not None:
                 out.append((name, "\n".join(lines).strip()))
             name, lines = line[3:].strip(), []
@@ -578,7 +591,8 @@ def load_record(run_dir):
         data = path.read_bytes()
         sources[rel] = hashlib.sha256(data).hexdigest()
         try:
-            return data.decode("utf-8")
+            # A Windows checkout (core.autocrlf) or editor adds CRLF and a BOM; the digest stays on the bytes.
+            return data.decode("utf-8-sig").replace("\r\n", "\n")
         except UnicodeDecodeError:
             raise RecordError(f"{rel}: not UTF-8") from None
 
@@ -815,7 +829,7 @@ def md_inline(text):
             continue
         part = esc(part)
         part = re.sub(r"\*\*(.+?)\*\*", r"<b>\1</b>", part)
-        out.append(re.sub(r"\[([^\]]+)\]\([^)\s]*\)", r"\1", part))
+        out.append(re.sub(r"\[([^\]]+)\]\((?:[^()\s]|\([^()\s]*\))*\)", r"\1", part))
     return "".join(out)
 
 
@@ -843,11 +857,12 @@ def _cells(row):
 def md_html(text):
     """The Markdown a phase document uses: headings, paragraphs, lists, pipe tables, fences."""
     lines, out, i = text.split("\n"), [], 0
-    block = re.compile(r"^(```|\||#{1,6} |\s*(?:[-*]|\d+\.) )")
+    block = re.compile(r"^( {0,3}(?:```|~~~)|\||#{1,6} |\s*(?:[-*]|\d+\.) )")
     while i < len(lines):
         line = lines[i]
-        if line.startswith("```"):
-            end = next((j for j in range(i + 1, len(lines)) if lines[j].startswith("```")), len(lines))
+        if FENCE.match(line):
+            fence = FENCE.match(line)[1]
+            end = next((j for j in range(i + 1, len(lines)) if not fence_after(lines[j], fence)), len(lines))
             out.append(f"<pre><code>{esc(chr(10).join(lines[i + 1:end]))}</code></pre>")
             i = end + 1
         elif line.startswith("|"):
@@ -869,7 +884,7 @@ def md_html(text):
             tag = "ol" if re.match(r"^\s*\d+\.", line) else "ul"
             items = []
             # A fence, table or heading ends the list even without a blank line before it.
-            while i < len(lines) and lines[i].strip() and not re.match(r"^(```|\||#{1,6} )", lines[i]):
+            while i < len(lines) and lines[i].strip() and not re.match(r"^( {0,3}(?:```|~~~)|\||#{1,6} )", lines[i]):
                 if re.match(r"^\s*(?:[-*]|\d+\.) ", lines[i]):
                     items.append(re.sub(r"^\s*(?:[-*]|\d+\.) ", "", lines[i]))
                 else:
@@ -1185,7 +1200,8 @@ def artifact_flow(record):
         for rel in d["fields"].get("produces", []):
             node(rel, rel, "step" if PHASE_DOC.match(rel) else "store")
             edges.append({"from": d["file"], "to": rel})
-    return {"id": "D-00", "title": "artifact flow", "direction": "LR", "nodes": nodes, "edges": edges}, tones
+    # "flow" is outside D-NN, so its arrow marker never shares an id with a recorded diagram's.
+    return {"id": "flow", "title": "artifact flow", "direction": "LR", "nodes": nodes, "edges": edges}, tones
 
 
 def render_page(record, digest, lang):
