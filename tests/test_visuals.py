@@ -213,11 +213,38 @@ class ReviewFindings(RunCopy):
         self.assertTrue(resume["Re-bind"].endswith("artifacts/scope-boundary.md, artifacts/visuals.json"))
         self.assertEqual(resume["Stopped because"], "budget ceiling reached before the loop contract was handed over")
 
+    def test_indented_line_under_the_header_leaves_status_alone(self):
+        self.edit("RUN.md", "**Status:** aborted-at-P6\n", "**Status:** aborted-at-P6\n    (resumable; see Resume)\n")
+        record, _ = visuals.load_record(self.run)
+        self.assertEqual(dict(record["run"]["header"])["Status"], "aborted-at-P6")
+
+    def test_continuation_stops_at_a_key_a_list_item_or_a_blank_line(self):
+        self.edit("RUN.md", "**Re-bind:** artifacts/acceptance-criteria.md, artifacts/scope-boundary.md, "
+                  "artifacts/visuals.json\n**Stopped because:**",
+                  "**Re-bind:** a,\n   **Next:** P6\n**Blockers:**\n  - one\n**Stopped because:** x\n   \n   y\n**Z:**")
+        record, _ = visuals.load_record(self.run)
+        resume = next(ps for name, ps, _ in record["run"]["sections"] if name == "Resume")
+        self.assertEqual(dict(resume)["Re-bind"], "a,")
+        self.assertEqual(dict(resume)["Next"], "P6")
+        self.assertEqual(dict(resume)["Blockers"], "")
+        self.assertEqual(dict(resume)["Stopped because"], "x")
+
     def test_refuses_an_ac_the_criteria_do_not_define(self):
         data = self.visuals()
         next(m for m in data["mocks"] if m["phase"] == "P5")["acs"] = ["AC-01", "AC-99"]
         self.write_visuals(data)
         self.refused("AC-99 not in artifacts/acceptance-criteria.md")
+
+    def test_ac_ids_are_checked_for_shape_even_without_the_criteria_file(self):
+        (self.run / "artifacts" / "acceptance-criteria.md").unlink()
+        data = self.visuals()
+        mock = next(m for m in data["mocks"] if m["phase"] == "P5")
+        mock["acs"] = ["AC-99"]
+        self.write_visuals(data)
+        visuals.load_record(self.run)  # no file to cross-check against
+        mock["acs"] = ["bogus"]
+        self.write_visuals(data)
+        self.refused("expected AC ids such as AC-01")
 
     def test_non_string_edge_end_exits_2(self):
         data = self.visuals()

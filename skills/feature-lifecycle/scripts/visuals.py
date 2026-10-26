@@ -269,8 +269,11 @@ def _common(item, where, pattern):
     _str(item, "title", where, required=True)
     for key in ("intent", "option"):
         _str(item, key, where)
-    if _strings(item, "acs", where) and item["phase"] == "P2":
+    acs = _strings(item, "acs", where)
+    if acs and item["phase"] == "P2":
         raise RecordError(f"{where}.acs: a P2 visual comes before acceptance criteria exist; leave it empty")
+    if not all(AC_ID.fullmatch(a) for a in acs):
+        raise RecordError(f"{where}.acs: expected AC ids such as AC-01")
 
 
 def _screen(screen, where, caption_required=False):
@@ -550,14 +553,17 @@ def sections(body):
 def parse_run(text):
     """RUN.md: the title, the `**Key:** value` pairs of its header and of each section.
 
-    A value continues on indented lines, as `**Re-bind:**` does in reference/run-record.md § What `resume` Reads.
+    In a section a value continues on indented lines, as `**Re-bind:**` does in reference/run-record.md
+    § What `resume` Reads; a blank line, another `**Key:**` or a list item does not continue it. The header
+    is not folded: its last value is usually `**Status:**`, which check reads verbatim.
     """
     title = next((line[2:].strip() for line in text.split("\n") if line.startswith("# ")), "")
     head = text.split("\n## ", 1)[0]
-    pairs = lambda s: [(m[1].strip(), " ".join(m[2].split()))
-                       for m in re.finditer(r"\*\*([^*]+?):\*\*[ \t]*([^·\n]*(?:\n[ \t]+[^·\n]*)*)", s)]
-    return {"title": title, "header": pairs(head),
-            "sections": [(name, pairs(body), body) for name, body in sections(text)]}
+    more = r"(?:\n[ \t]+(?![-*+] |\d+\. )(?![^\n]*\*\*[^*\n]+?:\*\*)\S[^\n]*)*"
+    pairs = lambda s, fold: [(m[1].strip(), " ".join(m[2].split())) for m in re.finditer(
+        rf"\*\*([^*]+?):\*\*[ \t]*([^·\n]*{more if fold else ''})", s)]
+    return {"title": title, "header": pairs(head, False),
+            "sections": [(name, pairs(body, True), body) for name, body in sections(text)]}
 
 
 def load_record(run_dir):
