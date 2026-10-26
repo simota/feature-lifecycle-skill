@@ -297,6 +297,17 @@ class ReviewFindings(RunCopy):
     def test_link_with_parentheses_shows_only_its_text(self):
         self.assertEqual(visuals.md_inline("see [RFC](https://e.x/a_(b)) now"), "see RFC now")
 
+    def test_link_scan_stays_fast_on_runs_of_brackets(self):
+        start = __import__("time").monotonic()
+        visuals.md_inline("[" * 20000 + "](" + "()" * 20000)
+        self.assertLess(__import__("time").monotonic() - start, 2)
+
+    def test_refuses_a_flow_value_left_open_at_the_end_of_the_envelope(self):
+        # the key used to vanish without a word
+        with self.assertRaises(visuals.RecordError) as caught:
+            visuals.parse_envelope("---\nrun: x\nproduces: [a,\n  b\n---\nbody", "f.md")
+        self.assertIn("produces: the flow value is not closed", str(caught.exception))
+
 
 class DesignSelect(RunCopy):
     """The P5 Design Select step: whole candidate designs, one selected, the rest rejected with a reason."""

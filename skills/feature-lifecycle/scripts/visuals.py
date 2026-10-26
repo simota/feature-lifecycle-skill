@@ -533,6 +533,8 @@ def parse_envelope(text, where):
         if not match:
             raise RecordError(f"{where}: cannot read frontmatter line {raw.strip()!r}")
         key, buf = match[1], match[2].strip()
+    if key:
+        raise RecordError(f"{where}: {key}: the flow value is not closed")
     return fields, text[close.end():]
 
 
@@ -829,7 +831,8 @@ def md_inline(text):
             continue
         part = esc(part)
         part = re.sub(r"\*\*(.+?)\*\*", r"<b>\1</b>", part)
-        out.append(re.sub(r"\[([^\]]+)\]\((?:[^()\s]|\([^()\s]*\))*\)", r"\1", part))
+        # No bracket in the text or the url: a scan ends at the next "[", so a long run of them stays linear.
+        out.append(re.sub(r"\[([^][]+)\]\((?:[^][()\s]|\([^][()\s]*\))*\)", r"\1", part))
     return "".join(out)
 
 
