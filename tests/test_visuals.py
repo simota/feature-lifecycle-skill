@@ -258,6 +258,56 @@ class ReviewFindings(RunCopy):
         self.assertEqual(page, "<ul><li>a</li></ul><pre><code>x</code></pre><ul><li>b</li></ul>"
                                "<table><tr><th>h</th></tr><tr><td>c</td></tr></table><ul><li>d</li></ul><h4>e</h4>")
 
+    def test_reads_a_record_checked_out_with_crlf_and_a_bom(self):
+        # git's core.autocrlf on Windows writes every Markdown file this way
+        for path in self.run.rglob("*"):
+            if path.suffix in (".md", ".json"):
+                path.write_bytes(b"\xef\xbb\xbf" + path.read_bytes().replace(b"\n", b"\r\n"))
+        record, _ = visuals.load_record(self.run)
+        self.assertEqual(dict(record["run"]["header"])["Status"], "aborted-at-P6")
+        self.assertEqual(next(d for d in record["docs"] if d["num"] == "05")["fields"]["status"], "sealed")
+        self.assertEqual(visuals.main(["render", str(self.run), "--out", str(self.out)]), 0)
+
+    def test_a_gate_inside_a_tilde_or_longer_fence_is_not_a_gate(self):
+        self.edit("03-verdict.md", "## Gate\n", "~~~\n## Gate\n")
+        with open(self.run / "03-verdict.md", "a") as f:
+            f.write("~~~\n")
+        self.refused("03-verdict.md: a sealed document carries a ## Gate section")
+        shutil.copy(SAMPLE / "03-verdict.md", self.run / "03-verdict.md")
+        # a ``` line inside a ```` fence is text, not the fence's end
+        self.edit("03-verdict.md", "## Gate\n", "````\n```\n## Gate\n")
+        with open(self.run / "03-verdict.md", "a") as f:
+            f.write("````\n")
+        self.refused("03-verdict.md: a sealed document carries a ## Gate section")
+
+    def test_fence_kinds_render_as_code(self):
+        self.assertEqual(visuals.md_html("~~~\n## x\n| y |\n~~~\npara"),
+                         "<pre><code>## x\n| y |</code></pre><p>para</p>")
+        self.assertEqual(visuals.md_html("````md\n```\n- a\n```\n````"),
+                         "<pre><code>```\n- a\n```</code></pre>")
+        self.assertEqual(visuals.md_html("- a\n~~~\nb\n~~~"), "<ul><li>a</li></ul><pre><code>b</code></pre>")
+
+    def test_envelope_closes_only_on_a_line_of_three_dashes(self):
+        # before, "---more" closed the envelope and the fields after it silently became body
+        with self.assertRaises(visuals.RecordError) as caught:
+            visuals.parse_envelope("---\nrun: x\n---more\nphase: P1\n---\nbody", "f.md")
+        self.assertIn("cannot read frontmatter line '---more'", str(caught.exception))
+        self.assertEqual(visuals.parse_envelope("---\nrun: x\n--- \nbody\n", "f.md"), ({"run": "x"}, "body\n"))
+
+    def test_link_with_parentheses_shows_only_its_text(self):
+        self.assertEqual(visuals.md_inline("see [RFC](https://e.x/a_(b)) now"), "see RFC now")
+
+    def test_link_scan_stays_fast_on_runs_of_brackets(self):
+        start = __import__("time").monotonic()
+        visuals.md_inline("[" * 20000 + "](" + "()" * 20000)
+        self.assertLess(__import__("time").monotonic() - start, 2)
+
+    def test_refuses_a_flow_value_left_open_at_the_end_of_the_envelope(self):
+        # the key used to vanish without a word
+        with self.assertRaises(visuals.RecordError) as caught:
+            visuals.parse_envelope("---\nrun: x\nproduces: [a,\n  b\n---\nbody", "f.md")
+        self.assertIn("produces: the flow value is not closed", str(caught.exception))
+
 
 class DesignSelect(RunCopy):
     """The P5 Design Select step: whole candidate designs, one selected, the rest rejected with a reason."""
@@ -266,6 +316,10 @@ class DesignSelect(RunCopy):
         data = self.visuals()
         change(data["designs"])
         self.write_visuals(data)
+
+    def test_refuses_a_design_id_past_ds_d(self):
+        self.designs(lambda ds: ds[1].update(id="DS-E"))
+        self.refused("expected DS-A … DS-D")
 
     def test_refuses_two_selected(self):
         self.designs(lambda ds: ds[1].update(status="selected", selected_by="user"))
@@ -381,6 +435,18 @@ class Render(RunCopy):
         page = (self.out / "run.html").read_text()
         self.assertIn("class='edge removed'", page)
         self.assertIn("class='node new component", page)
+
+
+    def test_artifact_flow_marker_never_shares_an_id_with_a_diagram(self):
+        data = self.visuals()
+        data["diagrams"][0]["id"] = "D-00"
+        for d in data["designs"]:
+            d["diagrams"] = ["D-00" if v == "D-01" else v for v in d["diagrams"]]
+        self.write_visuals(data)
+        self.render()
+        page = (self.out / "run.html").read_text()
+        ids = __import__("re").findall(r"<marker id='([^']+)'", page)
+        self.assertEqual(len(ids), len(set(ids)))
 
 
 class Layout(unittest.TestCase):
