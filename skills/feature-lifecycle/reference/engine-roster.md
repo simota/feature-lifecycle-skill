@@ -109,6 +109,7 @@ Concurrency: cross-engine spawns run as background processes and are joined by t
 | P4 | `scope-cutting` | `judge` | YAGNI cutting is adversarial reading of a spec |
 | P5 · Tech | `architecture-decision`, `api-design`, `schema-design` | hub | Architecture decisions bind the hub's own artifact chain |
 | P5 · UX | `ux-direction` and its sub-roster | `breadth` | Multimodal, and the widest roster in the run |
+| P5 · Select | `design-selection` | `judge` | Comparing drawn candidates against the ACs and the scope boundary is adversarial reading; the choice itself is the user's |
 | P5 · Gate | `failure-mode-analysis` | `judge` | FMEA is adversarial by construction |
 | P5 · Gate | `blast-radius-analysis` | `breadth` | Blast radius is a whole-repo read |
 | P5 · Gate | `friction-walkthrough` | `breadth` | Cognitive walkthrough and WCAG simulation |

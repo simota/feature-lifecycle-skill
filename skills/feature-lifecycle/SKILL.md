@@ -7,13 +7,14 @@ description: "Deliver one feature end to end when unresolved need, scope, or arc
 CAPABILITIES_SUMMARY:
 - goal_discovery: Authorized scan → evidence-bounded proposal → explicit goal selection, with unknown value and rejected alternatives visible
 - lifecycle_orchestration: Phase 0-6 + Ship chain with a typed artifact and an exit gate at every boundary
-- parallel_design: Tech track (architecture / API / schema) and UX track (sub-orchestrated where a UX orchestrator exists) run concurrently and reconverge at one gate
+- parallel_design: Tech track (architecture / API / schema) and UX track (sub-orchestrated where a UX orchestrator exists) run concurrently and reconverge at one gate on the candidate design the user selects
 - four_axis_risk_gate: FMEA + blast radius + UX friction & a11y + security and data exposure as a single go/no-go before any code is written
 - bounded_implementation_loop: Delegated loop with a declared iteration cap, convergence detection, cost-per-task tracking, and a circuit breaker
 - acceptance_verification: Independent conformance pass plus a negative pass proving nothing outside the declared scope was built
 - checkpoint_resume: Every phase boundary persisted so an aborted run resumes instead of restarting
 - budget_envelope: Pre-declared run-level ceiling with an 80% warning and a hard stop that checkpoints rather than overruns
 - no_hard_dependencies: Every roster row is work the chain owns — an installed specialist is delegated to, an absent one is performed by the chain against the identical gate
+- run_visuals: mocks and diagrams rendered with the run record into one stamped `run.html`
 - tri_engine_roster: build / judge / breadth bound to Codex CLI, Claude Code and agy, probed once per run, with the acceptance verification pinned off the engine that built
 
 COLLABORATION_PATTERNS:
@@ -146,7 +147,7 @@ Behavior notes per Recipe:
 | `P2_IDEATE` | Diamond thinking (expand → propose → evaluate → subtract) | ≥2 comparable decision candidates |
 | `P3_VERDICT` | Tri-engine deliberation → chosen option + AC seed | Verdict carries option, AC seed, scope boundary, failure conditions; a split escalates |
 | `P4_SPEC` | Authorized intent → L3 ACs + traceability + measurement | All required and decision-critical obligations traced; measurable ACs; optional gaps explicit |
-| `P5_DESIGN+GATE` | Tech track ‖ UX track, reconverging at the four-axis Risk Gate | `blast_radius.verdict ∈ {Go, Conditional-Go} ∧ failure_modes.high_rpn_count == 0 ∧ friction.gate_pass ∧ security.unmitigated_high == 0` |
+| `P5_DESIGN+GATE` | Tech ‖ UX → candidate designs → Design Select → four-axis Risk Gate | `blast_radius.verdict ∈ {Go, Conditional-Go} ∧ failure_modes.high_rpn_count == 0 ∧ friction.gate_pass ∧ security.unmitigated_high == 0` |
 | `P6_LOOP` | Bounded implementation loop under the selected driver and engine | Convergence, cap-reached, or circuit breaker — never an unbounded run |
 | `VERIFY` | Independent conformance pass + negative scope pass + a conditional integration-evidence pass | `unmet_required == 0 ∧ non_goal_violations == 0 ∧ required_evidence_met`, with `integration_evidence` recorded |
 | `SHIP` | Release/PR preparation and rollback rehearsal | Required recovery evidence met; impossible rollback needs verified controls and explicit residual-risk acceptance; report emitted |
@@ -186,6 +187,7 @@ Two tiers keep every hub at ≤11 with a real merge surface each. The chain adds
 | **Boundary confirm** | Before launch; P0 exit for discovery | Explicit grant per § Modes | Stop at the proposal (checkpointed only for granted discovery); an objection returns to the goal owner |
 | **Verdict gate** | Phase 3 exit | A non-split verdict with an AC seed and a scope boundary | 1-1-1 split → human verdict, then re-enter Phase 3 |
 | **Traceability gate** | Phase 4 exit | All required and decision-critical obligations traced; optional gaps explicit | P4 or upstream intent owner; no unilateral scope downgrade |
+| **Design Select** | Phase 5, before the Risk Gate | One design selected by the user (or explicit delegation), the rest rejected with a reason | No answer → `blocked-at-P5`; all rejected → its track |
 | **Risk Gate** | Phase 5 exit | `blast_radius.verdict ∈ {Go, Conditional-Go} ∧ failure_modes.high_rpn_count == 0 ∧ friction.gate_pass ∧ security.unmitigated_high == 0` | No-Go → first wrong decision: P1 need, P4 spec, P5 design |
 | **Demand↔reaction check** | Phase 5, inside the Risk Gate | Reaction source and uncertainty stated; synthetic agreement is not validation | Demand → P1; spec → P4; design → P5; changed goal → launch authority |
 | **Engine roster** | Before the first spawn | All three CLIs probed and every role bound, with any rebinding recorded | Fold by fallback order and record the degradation; never proceed on an unrecorded roster |
@@ -199,7 +201,7 @@ Two tiers keep every hub at ≤11 with a real merge surface each. The chain adds
 
 Loop and re-entry bounds are § Core Contract's, with the per-engine ceiling and exit reasons in `reference/loop-engine.md` § Termination Bounds; past the re-entry cap the user decides. On any non-`ACCEPT` exit the Delivery Report states which acceptance criteria remain unmet and the residual gap — never a silent partial.
 
-Cost runs 16-24 agents (Lite) / 23-37 (Standard) / 27-36 (Full), plus 3-8 for Phase 0, plus loop cycles — 32-81 spawns at the Full autonomous profile, derived from the rosters. The chain is not free; the run-level budget envelope, the loop's cost-per-task breaker, and the Ask First gates are what bound it → `reference/delivery-report.md` § Cost Profile. For repeated similar requests, propose a project-local skill to amortise the chain design cost instead of re-running the chain.
+Cost runs 16-25 agents (Lite) / 23-38 (Standard) / 27-37 (Full), plus 3-8 for Phase 0, plus loop cycles — 32-82 spawns at the Full autonomous profile, derived from the rosters. The chain is not free; the run-level budget envelope, the loop's cost-per-task breaker, and the Ask First gates are what bound it → `reference/delivery-report.md` § Cost Profile. For repeated similar requests, propose a project-local skill to amortise the chain design cost instead of re-running the chain.
 
 ## Gotchas
 
@@ -224,7 +226,7 @@ A complete run carries the following — a ceiling, not a floor. Emit only what 
 
 - The **Feature Lifecycle Delivery Report**, carrying every section of `reference/delivery-report.md` § The Feature Lifecycle Delivery Report — discovery summary · spec & AC with traceability % · design decisions · the four-axis Risk-Gate verdict · engine roster · loop record · AC-verify · upstream packet · follow-ups · measurement contract · ship status. Field-level content is that table's, not restated here.
 - Acceptance Provenance, the Decision Ledger, and the Residual Ledger with a class per leftover, plus the completion-sweep line and the resumable checkpoint on any non-ship exit
-- The **run-record path** (`.agents/feature-lifecycle/runs/<run-id>/`) and `run_record_committed`, so the phase documents behind every number above can be opened (`reference/run-record.md`)
+- The **run-record path** (`.agents/feature-lifecycle/runs/<run-id>/`) and `run_record_committed`, so the phase documents behind every number above can be opened (`reference/run-record.md`), and the rendered run view (`reference/visuals.md`)
 - Output language follows the CLI global config (`settings.json` `language` field, `CLAUDE.md`, `AGENTS.md`, or `GEMINI.md`). Code, identifiers, file paths, CLI commands, protocol markers, schema keys and technical terms remain in English.
 
 ## Collaboration
@@ -263,6 +265,7 @@ Each row is a boundary, not a dependency: where the neighbouring capability is n
 | `reference/engine-roster.md` | Before the first spawn, at the Phase 3 verdict, at the Phase 5 → 6 handoff, or before the acceptance verification |
 | `reference/loop-engine.md` | You are at the Phase 5 → 6 handoff, inside the loop, or at the acceptance verification |
 | `reference/run-record.md` | You are launching, sealing a phase at its gate, resuming, or deciding whether something belongs in the record, the journal, or the report |
+| `reference/visuals.md` | Drawing P2/P5 mocks or diagrams, recording Design Select, or rendering the run view |
 | `reference/input-contracts.md` | An upstream packet arrived, or you must decide what a bare invocation re-derives |
 | `reference/delivery-report.md` | You are emitting output, sizing the budget envelope, resuming, or classifying a failure |
 | `reference/contracts.md` | Any operating rule the chain depends on — precedence, the loop precondition gate, the evidence ladder, driver availability, the spawn contract, the Work Gate, handoff envelopes, the run record and journal, how every document is written, and Git conventions |

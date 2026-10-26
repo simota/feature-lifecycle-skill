@@ -48,6 +48,8 @@ relative to `skills/feature-lifecycle/`.
 | `reference/input-contracts.md` | Upstream handoff packets and what a bare invocation must derive itself |
 | `reference/delivery-report.md` | Output envelope, Delivery Report, cost profile, budget envelope, checkpoint-resume, failure escalation |
 | `reference/run-record.md` | Where a run's analysis is written — the run directory, the sealed document per phase, the artifacts that outlive their phase, the write discipline, and what `resume` reads |
+| `reference/visuals.md` | Screen mocks and design diagrams (`artifacts/visuals.json`), their markup rules, and the one-page run view |
+| `scripts/visuals.py` | Checks a run record and `visuals.json`, and renders `run.html` — standard library only |
 | `reference/contracts.md` | The operating rules the chain carries with it — precedence, loop preconditions, evidence ladder, driver availability, spawn contract, Work Gate, handoffs, run record and journal, the Document Contract every document is written to, Git |
 
 ## What a run leaves behind
@@ -62,6 +64,7 @@ RUN.md                 index · engine roster · budget ledger · phase status �
 90-delivery-report.md  the emitted report, verbatim
 artifacts/             acceptance-criteria · scope-boundary · measurement-contract
                        loop-contract · acceptance-matrix · ADR-NNN-<slug>
+                       visuals.json (P2 candidate mocks · P5 design mock and diagrams)
 ```
 
 Every phase document carries the same four sections: `## Outcome` (the typed artifact),
@@ -81,6 +84,21 @@ Documents are sealed at the gate — failures included — and a re-entry **appe
 than rewrites, so the record cannot end up describing a run in which no gate ever failed.
 Writes are atomic, because a truncated document that `resume` reads as a checkpoint is
 worse than a missing one. Full contract → `skills/feature-lifecycle/reference/run-record.md`.
+
+### The run view
+
+`scripts/visuals.py render` turns a record into one self-contained `run.html`: phase cards
+with each gate and re-entry, the artifact flow, the **Design Select** cards — 2–4 whole
+candidate designs side by side, with screens, AC coverage and drawn blast radius computed from
+the record, from which the user picks the one that goes to the Risk Gate — the design diagrams (what is new, changed and
+removed), and the screen mocks — today beside the recommended design and its alternatives, each
+with a **Copy for LLM** button for the build. It loads nothing from the network, is stamped with
+the SHA-256 of the sources it read, and is written outside the record, which stays the only
+source of truth. Contract → `skills/feature-lifecycle/reference/visuals.md`.
+
+```sh
+make demo    # render examples/sample-run (a fictional record) to $TMPDIR/feature-lifecycle-demo/run.html
+```
 
 ## Docs site
 
@@ -108,15 +126,17 @@ generates it, so nothing silently drifts without a diff to review.
 make lint        # block on P1/P2 findings
 make lint-strict # also block on advisory size findings
 make selftest    # prove each check blocks, and names itself, when broken
-make check       # both — the full gate
+make test        # unit tests for scripts/visuals.py against examples/sample-run
+make check       # lint + selftest + test — the full gate
 make eval        # verify the frozen adversarial corpus and its grader (tests/adversarial/)
 make hooks       # install the pre-commit hook — lints the staged content
-                 # (lint always; selftest when tools/, skills/ or README.md changed;
+                 # (lint always; selftest + test when tools/, skills/, README.md,
+                 #  tests/test_visuals.py or examples/ changed;
                  #  eval when tests/adversarial/ changed) — into git's hooks path,
                  #  so core.hooksPath and linked worktrees work
 ```
 
-CI (`.github/workflows/check.yml`) runs `make check` and `make eval` on every push to
+`make check` runs lint, selftest and test. CI (`.github/workflows/check.yml`) runs `make check` and `make eval` on every push to
 `main` and every pull request, so the gate holds whether or not a contributor installed
 the hook.
 
@@ -163,7 +183,7 @@ Full model → `skills/feature-lifecycle/reference/engine-roster.md`.
 `AUTORUN_FULL` is an execution preference, not consent or product-priority delegation. Launch requires an explicit goal/scope/budget grant; a sufficient existing grant is reused. Synthetic demand stays hypothetical and missing scoring inputs stay unknown.
 
 - Every phase boundary emits a typed artifact and passes a named gate.
-- Design work runs parallel and reconverges at **one** risk gate before any code is written.
+- Design work runs parallel, offers 2–4 whole candidate designs where the ACs allow, and reconverges at **one** risk gate on the design the user selects, before any code is written.
 - The implementation loop is bounded — `≤ 6` cycles by default, `≤ 4` when Claude Code is the `build` engine — and the run carries a hard budget ceiling that checkpoints rather than overruns.
 - Ship requires every authorized required/decision-critical obligation, an independent oracle, a negative scope pass and the risk-specific integration/recovery evidence. Percentages are summaries, not waivers. Verification checks original intent as well as the spec; model, context, evidence and oracle independence are separate claims. One engine remains honestly `context-only`.
 - Every phase writes a sealed document — outcome, findings, rejected options, and the gate's measured terms — to a committed run record, so the numbers in the report can be gone behind and a failed gate is readable after the fact.

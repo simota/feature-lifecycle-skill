@@ -22,7 +22,7 @@ Run the availability gate of `reference/contracts.md` §4 **before** selecting t
 
 | Path | Condition | Who owns the loop |
 |------|-----------|-------------------|
-| A project-local loop-runner skill | The workspace availability gate passes | It consumes the L3 ACs + mitigations + friction signals + the measurement contract + required evidence + the declared cap, authors the loop contract, generates the runner script set, and audits convergence |
+| A project-local loop-runner skill | The workspace availability gate passes | It consumes the L3 ACs + mitigations + friction signals + the measurement contract + required evidence + the selected design's mock and diagram ids (`reference/visuals.md`) + the declared cap, authors the loop contract, generates the runner script set, and audits convergence |
 | Fallback | No project-local installation | The chain drives the same bounded loop directly and owns the contract, convergence, and circuit-breaker duties. Record `project_local_fallback: true`; no repository-specific runner is generated |
 
 For the rest of this file, "the driver" means whichever of the two was selected. The **duties do not change** with the path — only who discharges them.
@@ -41,7 +41,7 @@ The Phase 5 → Phase 6 boundary is **both a phase boundary and an engine bounda
 |-------|------|----------|-------------|
 | `loop-driver` | Loop contract design + convergence detection + cost-per-task tracking + circuit breaker | Conditional: a project-local loop runner is available; otherwise the chain owns this row | hub — then writes the runner spawn scripts |
 | `implementation` | Business logic / backend implementation | Yes | `build` |
-| `frontend-implementation` | Production frontend (promotes the Phase 5 prototype) | Conditional: UI surface | `build` |
+| `frontend-implementation` | Production frontend (promotes the Phase 5 prototype; the selected design's Copy for LLM markdown is its design intent, the ACs its target) | Conditional: UI surface | `build` |
 | `component-catalog` | Component stories | Conditional: components added | `build` |
 | `code-review` | Per-iteration review of the cycle's diff | Yes | `judge` |
 | `test-authoring` | Unit / integration tests | Yes | `judge` |

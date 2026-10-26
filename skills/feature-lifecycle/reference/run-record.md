@@ -87,6 +87,7 @@ The file number is the phase number. Every phase that runs has exactly one docum
     ├── measurement-contract.md
     ├── loop-contract.md
     ├── acceptance-matrix.md
+    ├── visuals.json           P2/P5 mocks and diagrams (when any were drawn)
     └── ADR-001-<slug>.md      (0..n)
 ```
 
@@ -147,10 +148,10 @@ What each phase's `## Findings` and `## Outcome` are expected to carry beyond th
 |----------|-----------------|------------------------|
 | `00-bootstrap.md` | `auto_selected_goal` with its evidence refs and supported comparison, including unknown inputs | Every signal source that was and was not reachable; the scoring framework chosen and why; each comparison's sourced inputs, missing inputs and bias, not just the winner; `confidence: low` flags and their cause |
 | `01-discovery.md` | Decision-driving needs with provenance, source, supported scope and hypothesis/observation status | Where synthetic scenarios were useful, their hypothesis status and limits; the reuse scan's near-misses — a module that *almost* covers the need is the finding that changes the design; the friction baseline's measured values |
-| `02-ideate.md` | ≥2 comparable decision candidates | What Expand produced before Subtract cut it, and the cut criterion. The subtracted set is the part that never survives to the report |
+| `02-ideate.md` | ≥2 comparable decision candidates, with the ids of their mocks | What Expand produced before Subtract cut it, and the cut criterion. The subtracted set is the part that never survives to the report |
 | `03-verdict.md` | The verdict: option, AC seed, scope boundary, failure conditions | **Each voice's position separately**, the premise/evidence/oracle it challenged, and shared inputs. Disagreement or distinct engines alone does not establish independence. `simulated_voices` named here too |
 | `04-spec.md` | Links to `acceptance-criteria.md`, `scope-boundary.md`, `measurement-contract.md`; the obligation-to-AC traceability matrix and its summary percentage | Requirements that resisted a measurable AC and how they were resolved; what `scope-cutting` removed; where the measurement contract is weak or unmeasurable, and what would have to exist |
-| `05-design.md` | ADR link(s), API/schema deltas, UX direction and token summary; the four-axis Risk-Gate result | The full FMEA table including rows below the RPN threshold; the blast-radius map; the friction walkthrough's measured values; the security review's `no-surface` claims **with their evidence**; any Conditional-Go condition and who owns it |
+| `05-design.md` | The selected design and `selected_by`; ADR link(s), API/schema deltas, UX direction and token summary, the ids of the P5 mocks and diagrams; the four-axis Risk-Gate result | The Design Select comparison as it stood before the choice, and the recommendation; the full FMEA table including rows below the RPN threshold; the blast-radius map; the friction walkthrough's measured values; the security review's `no-surface` claims **with their evidence**; any Conditional-Go condition and who owns it |
 | `06-loop.md` | Convergence reason, iteration count, cost per task, circuit-breaker status | Per cycle: what changed, what `code-review` flagged, and Δ. A loop that hit its cap is unreadable later without this; the loop-precondition verdict and the runner it was scored against |
 | `07-verification.md` | Link to `acceptance-matrix.md`; obligation/AC/oracle evidence, percentage summary, `unmet_must_haves`, `unmet_required`, `non_goal_violations`, required evidence status | Every AC whose evidence sits below the E3-with-independent-oracle floor and is therefore `unverified` rather than verified; each out-of-boundary change found, and whether it was reverted or ratified — **by whom** |
 | `08-ship.md` | PR link, release plan, `rollback_verified` | What rollback actually exercised, or its impossible reason, verified compensating controls and explicit residual-risk acceptance; missing evidence blocks readiness; the open `hypothesis-open` residual and where its number will be read |
@@ -167,8 +168,9 @@ A thing gets its own file under `artifacts/` when **something outside the phase 
 | `loop-contract.md` | The P5 → P6 handoff | The loop driver — it is the only thing that crosses the engine boundary, and the answer to "what was the loop actually told to do?" |
 | `acceptance-matrix.md` | VERIFY | The Ship gate, and anyone auditing the claim later |
 | `ADR-NNN-<slug>.md` | P5 Tech | The codebase, later features, and anyone asking why this shape |
+| `visuals.json` | P2 and P5, written by the hub | The loop driver (the loop contract cites its P5 ids), the acceptance verification's negative pass, and the PR reviewer through the run view — `reference/visuals.md` |
 
-**Adding a seventh requires naming its outside reader.** Without that test the directory drifts into a second copy of the phase documents, and then two places disagree about the same fact — which is the failure mode `reference/phase-contracts.md` avoids by refusing to restate a roster.
+**Adding another requires naming its outside reader.** Without that test the directory drifts into a second copy of the phase documents, and then two places disagree about the same fact — which is the failure mode `reference/phase-contracts.md` avoids by refusing to restate a roster.
 
 The four Risk-Gate axes deliberately stay inside `05-design.md`. They are one gate with one conjunctive verdict; splitting them into four files buries the `∧` that *is* the gate.
 
@@ -243,7 +245,7 @@ An `open` document means that phase did not finish. Resume **re-enters that phas
 |--------|---------|-----------|
 | `running` | A phase document is `open` and the hub has not exited | Yes — found by a later invocation, it means the hub died without writing a stop; treat it as `aborted-at-<phase of the open document>`, or `aborted-at-<Next phase>` when the hub died between sealing one phase and opening the next. The record has one writer (§ Write discipline) and carries no liveness signal, so a `running` record is offered for resume only after the user confirms no other session is still writing it |
 | `aborted-at-<P>` | Stopped at or inside phase `<P>` by the budget ceiling, the circuit breaker, a Risk-Gate No-Go the run stopped on rather than re-entered, an unanswered question (the 0e boundary confirm, an engine choice), or a user interrupt | Yes |
-| `blocked-at-<P>` | Stopped on a typed blocker only the user or an external party can clear — missing authority, missing required evidence, a spec-owner return, an acceptance failure past the re-entry cap awaiting the user's decision | Yes, once the blocker named in `Stopped because` is cleared |
+| `blocked-at-<P>` | Stopped on a typed blocker only the user or an external party can clear — missing authority, missing required evidence, a Design Select choice awaiting the user, a spec-owner return, an acceptance failure past the re-entry cap awaiting the user's decision | Yes, once the blocker named in `Stopped because` is cleared |
 | `declined-at-P0` | The 0e boundary confirm was explicitly rejected; the record keeps the provisional id | No — a later `bootstrap` reads its `00-bootstrap.md` as prior evidence instead |
 | `shipped` | The Ship gate passed | No |
 | `superseded` | A later run shipped the same goal; awaiting prune (§ Retention) | No |

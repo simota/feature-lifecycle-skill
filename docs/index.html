@@ -516,7 +516,7 @@ db_change=  budget=</pre>
       <button type="button" data-p="full" aria-pressed="false">Full</button>
     </div>
     <label class="switch"><input type="checkbox" id="bootChk"> Autonomous mode (include Phase 0)</label>
-    <span class="readout" aria-live="polite">est. agents <b id="agentCount">23–37</b> · <span id="profNote">all phases active</span></span>
+    <span class="readout" aria-live="polite">est. agents <b id="agentCount">23–38</b> · <span id="profNote">all phases active</span></span>
   </div>
 
   <div class="phases" id="phaseList">
@@ -613,7 +613,7 @@ db_change=  budget=</pre>
       <div class="pc-id"><span class="k">P5</span><span class="role">hub ‖ breadth</span></div>
       <div class="pc-body">
         <h3>Design — the Tech track ‖ the UX track</h3>
-        <p class="focus">The two tracks run in parallel and reconverge at one gate. UX internal pipeline: <code>ux-direction → design-tokens → [interaction-design ‖ microcopy ‖ motion-spec] → design-file-extraction? → prototype → friction-walkthrough</code>.</p>
+        <p class="focus">The two tracks run in parallel and reconverge at one gate. UX internal pipeline: <code>ux-direction → design-tokens → [interaction-design ‖ microcopy ‖ motion-spec] → design-file-extraction? → prototype(candidates) → [Design Select] → prototype(working slice) → friction-walkthrough</code>.</p>
         <p class="sub-lab">Tech</p>
         <ul class="rows">
           <li>architecture-decision</li>
@@ -638,6 +638,22 @@ db_change=  budget=</pre>
         <span class="lab">risk gate · four axes, parallel</span>
         <code>blast_radius.verdict ∈ {Go, Conditional-Go}<br>∧ failure_modes.high_rpn_count == 0<br>∧ friction.gate_pass<br>∧ security.unmitigated_high == 0</code>
         <p class="fail"><b>on failure</b>No-Go → the first wrong decision: demand P1, spec P4, design P5. The <strong>demand↔reaction check</strong> labels real observation, existing behavior, prototype test or synthetic walkthrough. Synthetic agreement cannot validate synthetic demand; unknown reaction remains unknown. A changed product goal reopens launch authority.</p>
+      </div>
+    </article>
+
+    <article class="pc" data-phase="pselect">
+      <div class="pc-id"><span class="k">SELECT</span><span class="role">judge → user</span></div>
+      <div class="pc-body">
+        <h3>Design Select — the user picks one whole design</h3>
+        <p class="focus">Where the ACs can be met in materially different ways, the tracks draw <strong>2–4 candidate designs</strong> — each every screen it changes plus the architecture behind it — instead of one. <code>design-selection</code> compares them against the ACs, the scope boundary, the guardrails and the drawn blast radius, and recommends one; the run view's Design Select section shows them side by side with facts computed from the record. <strong>The user selects</strong>: silence and <code>AUTORUN_FULL</code> do not delegate a product choice. Only the selected design gets a working slice and goes through the Risk Gate.</p>
+        <ul class="rows">
+          <li data-req="cond">design-selection<span class="q">?</span></li>
+        </ul>
+      </div>
+      <div class="pc-gate">
+        <span class="lab">exit</span>
+        <code>exactly one design selected ∧ selected_by ∈ {user, delegated}<br>∧ every other design rejected with a reason</code>
+        <p class="fail"><b>on failure</b>No answer → <code>blocked-at-P5</code>, never a default pick. Every candidate rejected → the owning track with the objection. A lone design records why no alternative existed.</p>
       </div>
     </article>
 
@@ -918,6 +934,7 @@ db_change=  budget=</pre>
         <tr><td><b>Boundary confirm</b></td><td>Before launch; P0 exit for discovery</td><td>Explicit grant per Modes</td><td>Stop at the proposal without an answer (checkpointed only for granted discovery); no silent launch</td></tr>
         <tr><td><b>Verdict</b></td><td>Phase 3 exit</td><td>A non-split verdict with an AC seed and a scope boundary</td><td>1-1-1 split → human verdict, then re-enter Phase 3</td></tr>
         <tr><td><b>Traceability</b></td><td>Phase 4 exit</td><td>All required and decision-critical obligations traced; optional gaps explicit</td><td>P4 or intent owner; no unilateral scope downgrade</td></tr>
+        <tr><td><b>Design Select</b></td><td>Phase 5, before the Risk Gate</td><td>One design selected by the user or an explicit delegation; the rest rejected with a reason</td><td>No answer → <code>blocked-at-P5</code>; all rejected → the owning track</td></tr>
         <tr><td><b>Risk Gate</b></td><td>Phase 5 exit</td><td>All four axes: blast radius, RPN, friction, security</td><td>No-Go → first wrong decision: P1 demand, P4 spec, P5 design</td></tr>
         <tr><td><b>Demand↔reaction check</b></td><td>Phase 5, inside the Risk Gate</td><td>Reaction source and uncertainty stated; synthetic agreement is not validation</td><td>P1 demand / P4 spec / P5 design; changed goal → launch authority</td></tr>
         <tr><td><b>Engine roster</b></td><td>Before the first spawn</td><td>All three CLIs probed and every role bound, with any rebinding recorded</td><td>Fold by fallback order and record the degradation; never proceed on an unrecorded roster</td></tr>
@@ -954,7 +971,8 @@ db_change=  budget=</pre>
 artifacts/
   acceptance-criteria.md   scope-boundary.md
   measurement-contract.md  loop-contract.md
-  acceptance-matrix.md     ADR-NNN-&lt;slug&gt;.md</pre>
+  acceptance-matrix.md     ADR-NNN-&lt;slug&gt;.md
+  visuals.json             P2/P5 mocks + diagrams</pre>
       <p class="sec-note" style="margin-top:14px">The file number is the phase number. A phase that did not run has no document; a conditional row that did not run is a line in its phase's document — "the UX track did not run, there is no UI surface" is a finding, a gap in the numbering is a puzzle.</p>
     </div>
     <div>
@@ -1063,6 +1081,7 @@ artifacts/
         <tr><td><code>loop-contract.md</code></td><td>The P5 → P6 handoff</td><td>The loop driver — the only thing that crosses the engine boundary, and the answer to "what was the loop actually told to do?"</td></tr>
         <tr><td><code>acceptance-matrix.md</code></td><td>VERIFY</td><td>The Ship gate, and anyone auditing the claim later</td></tr>
         <tr><td><code>ADR-NNN-&lt;slug&gt;.md</code></td><td>P5 Tech</td><td>The codebase, later features, anyone asking why this shape</td></tr>
+        <tr><td><code>visuals.json</code></td><td>P2 and P5, written by the hub</td><td>The loop driver (the contract cites its P5 ids), the negative pass, and the PR reviewer through the run view</td></tr>
       </tbody>
     </table>
   </div>
@@ -1082,6 +1101,9 @@ artifacts/
   </div>
   <p class="sec-note" style="margin-top:14px">The journal stays a journal. Before the run record existed, a run with something worth preserving had nowhere to put it but the journal — which is how a learnings file becomes a diary nobody reads.</p>
 
+  <h3>The run view</h3>
+  <p class="sec-note">Three decisions are made by people who did not do the work: choosing between Phase 2 candidates, choosing between Phase 5 candidate designs at Design Select, and accepting the selected one at the Risk Gate. All go faster when the reader <em>sees</em> the change. <code>option-generation</code> draws a mock per candidate that changes a screen; <code>prototype</code> draws each candidate design's screens — today, the recommended after, per-screen alternatives; <code>architecture-decision</code> draws each candidate's architecture with what is <em>new</em>, <em>changed</em> and <em>removed</em> marked. <code>scripts/visuals.py render</code> turns the record into one <code>run.html</code> — phase cards with each gate and re-entry, the artifact flow, the Design Select cards the user chooses from, the diagrams and the mocks, each with a Copy for LLM button for the build — loading nothing from the network and stamped with the SHA-256 of its sources. A mock shows intent; the ACs, not the pixels, are what the verification checks.</p>
+
   <div class="callout"><b>What never goes in.</b> Secrets, tokens or customer data — the record is committed, so treat every line as published, because it is. Raw spawn transcripts — the store is analysis, and a producer's own reasoning trace is <code>E0</code> on the evidence ladder, not evidence for anything the record claims. The diff — git holds that; the record names the files and the reason. And a number with no source: a conformance percentage or an RPN is written with what produced it, because the run record is not the place to add confidence the run did not earn.</div>
 </section>
 
@@ -1095,14 +1117,14 @@ artifacts/
         <table>
           <thead><tr><th>Profile</th><th class="num-c">Agents</th><th>Cost</th></tr></thead>
           <tbody>
-            <tr><td>Lite — no UI, spec scope Lite</td><td class="num-c">16–24</td><td>Low</td></tr>
-            <tr><td>Standard — UI, spec scope Standard</td><td class="num-c">23–37</td><td>Medium</td></tr>
-            <tr><td>Full — greenfield, spec scope Full</td><td class="num-c">27–36</td><td>High</td></tr>
+            <tr><td>Lite — no UI, spec scope Lite</td><td class="num-c">16–25</td><td>Low</td></tr>
+            <tr><td>Standard — UI, spec scope Standard</td><td class="num-c">23–38</td><td>Medium</td></tr>
+            <tr><td>Full — greenfield, spec scope Full</td><td class="num-c">27–37</td><td>High</td></tr>
             <tr><td>+ autonomous bootstrap (Phase 0)</td><td class="num-c">+3–8</td><td>+10–20%</td></tr>
           </tbody>
         </table>
       </div>
-      <p class="sec-note" style="margin-top:14px">Counts are one agent per roster row that runs, with one loop cycle, derived from the rosters rather than measured. Counting the three deliberation voices and up to five further loop cycles, that is <strong>32–81 spawns</strong> at the Full autonomous profile. For repeated similar requests, propose a project-local skill to amortise the chain design cost instead of re-running the chain.</p>
+      <p class="sec-note" style="margin-top:14px">Counts are one agent per roster row that runs, with one loop cycle, derived from the rosters rather than measured. Counting the three deliberation voices and up to five further loop cycles, that is <strong>32–82 spawns</strong> at the Full autonomous profile. For repeated similar requests, propose a project-local skill to amortise the chain design cost instead of re-running the chain.</p>
     </div>
     <div>
       <h3 style="margin-top:0">The budget envelope</h3>
@@ -1145,11 +1167,11 @@ artifacts/
 <script>
 (function () {
   var PROFILES = {
-    lite:     { count: "16–24", note: "no UI · UX track idle · spec scope Lite" },
-    standard: { count: "23–37", note: "all phases active" },
-    full:     { count: "27–36", note: "+ scope-cutting / formal-spec / design-file-extraction / i18n" }
+    lite:     { count: "16–25", note: "no UI · UX track idle · spec scope Lite" },
+    standard: { count: "23–38", note: "all phases active" },
+    full:     { count: "27–37", note: "+ scope-cutting / formal-spec / design-file-extraction / i18n" }
   };
-  var BOOT = { lite: "19–32", standard: "26–45", full: "30–44" };
+  var BOOT = { lite: "19–33", standard: "26–46", full: "30–45" };
 
   var seg = document.getElementById("segProfile");
   var buttons = seg.querySelectorAll("button");

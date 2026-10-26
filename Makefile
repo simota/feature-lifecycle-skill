@@ -19,13 +19,15 @@ AGY_DIR    := $(HOME)/.gemini/antigravity-cli/skills
 DOCS       := $(REPO)/docs
 PAGES_PORT ?= 8000
 
-.PHONY: help lint lint-strict selftest check eval link unlink status hooks pages
+.PHONY: help lint lint-strict selftest test check eval demo link unlink status hooks pages
 
 help:
 	@echo "make lint          check the skill (blocks on P1/P2)"
 	@echo "make lint-strict   also block on advisory P3 findings"
 	@echo "make selftest      prove each check blocks, and names itself, when broken"
-	@echo "make check         lint + selftest — the full gate"
+	@echo "make test          unit tests for scripts/visuals.py"
+	@echo "make check         lint + selftest + test — the full gate"
+	@echo "make demo          render examples/sample-run to $$TMPDIR/feature-lifecycle-demo/run.html"
 	@echo "make eval          verify the frozen adversarial corpus and run its grader selftest"
 	@echo ""
 	@echo "make link          symlink the skill into claude / codex / agy"
@@ -46,7 +48,15 @@ lint-strict:
 selftest:
 	@$(LINT) --selftest
 
-check: lint selftest
+test:
+	@python3 -m unittest discover -s "$(REPO)/tests" -p 'test_*.py'
+
+check: lint selftest test
+
+DEMO_OUT   ?= $${TMPDIR:-/tmp}/feature-lifecycle-demo
+
+demo:
+	@python3 "$(SKILL)/scripts/visuals.py" render "$(REPO)/examples/sample-run" --out "$(DEMO_OUT)" --lang en
 
 # The adversarial corpus is a separate, opt-in check: it verifies the frozen hashes
 # and that the grader names each mutation. It runs no model and says nothing about
@@ -135,7 +145,7 @@ hooks:
 	  '# the selftest whenever the checker or the text its mutations edit changed:' \
 	  '# a mutation anchored to SKILL.md or README text breaks when that text moves' \
 	  'goal=lint' \
-	  'git diff --cached --quiet -- tools skills README.md || goal=check' \
+	  'git diff --cached --quiet -- tools skills README.md tests/test_visuals.py examples || goal=check' \
 	  '# the corpus grader only when the corpus or its grader changed' \
 	  'git diff --cached --quiet -- tests/adversarial || goal="$$goal eval"' \
 	  'status=0' \

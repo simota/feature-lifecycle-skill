@@ -102,7 +102,7 @@ Bind goal, scope, action limits and budget to the explicit grant in `RUN.md`; in
 
 | Row | Work | Required |
 |-----|------|----------|
-| `option-generation` | Diamond thinking (Expand → Propose → Evaluate → Subtract), max 4 turns | Yes |
+| `option-generation` | Diamond thinking (Expand → Propose → Evaluate → Subtract), max 4 turns; a mock per candidate that changes a screen (`reference/visuals.md`) | Yes |
 
 **Exit gate:** ≥2 comparable decision candidates ready for the verdict.
 
@@ -157,7 +157,7 @@ The two tracks run in parallel and reconverge at one gate.
 
 | Row | Work | Required |
 |-----|------|----------|
-| `architecture-decision` | Architecture decision + ADR (MADR/Nygard) + dependency graph | Yes |
+| `architecture-decision` | Architecture decision + ADR (MADR/Nygard) + dependency graph, drawn as a change-marked diagram (`reference/visuals.md`) | Yes |
 | `api-design` | API design + OpenAPI document | Conditional: API change |
 | `schema-design` | DB schema + migration plan | Conditional: DB change |
 
@@ -171,14 +171,28 @@ The two tracks run in parallel and reconverge at one gate.
 | `microcopy` | Microcopy, error/empty states, voice and tone | Yes |
 | `motion-spec` | Animation / motion specification | Conditional: motion in scope |
 | `design-file-extraction` | Design-file extraction and code mapping | Conditional: a design file is in the workflow |
-| `prototype` | Rapid prototype (working slice) | Yes |
+| `prototype` | Before Design Select: the screen mocks of every candidate design — today, the recommended after, per-screen alternatives (`reference/visuals.md`). After it: the working slice of the selected design | Yes |
 | `friction-walkthrough` | Cognitive walkthrough + WCAG 3.0 simulation + dark-pattern audit | Yes |
 | `i18n-strategy` | i18n string-extraction strategy | Conditional: multi-locale |
 | `mockup-to-code` | Mockup-to-code | Conditional: mockup supplied |
 
-Internal pipeline: `ux-direction → design-tokens → [interaction-design ‖ microcopy ‖ motion-spec] → design-file-extraction? → prototype → friction-walkthrough`.
+Internal pipeline: `ux-direction → design-tokens → [interaction-design ‖ microcopy ‖ motion-spec] → design-file-extraction? → prototype(candidate mocks) → [Design Select] → prototype(working slice) → friction-walkthrough`.
 
-### Risk Gate (four axes, parallel, after both tracks)
+### Design Select (after both tracks, before the Risk Gate)
+
+| Row | Work | Required |
+|-----|------|----------|
+| `design-selection` | Compare the 2–4 candidate designs the tracks drew — each a set of screen mocks and diagrams — against the L3 ACs, the scope boundary, the guardrails, the drawn blast radius and the friction they imply; recommend one with reasons; present the comparison to the user, who selects | Conditional: the tracks drew ≥2 candidate designs |
+
+A **candidate design** is a whole answer — every screen it changes and the architecture behind it — not a variant of one screen; variants of one screen stay a mock's alternatives inside a design. The tracks draw candidates when the AC set can be met in materially different ways (placement or number of steps, a new store versus a token, a new surface versus an existing one). One forced shape is one design, recorded with the reason no alternative existed; the row then does not run.
+
+**The user selects.** Which design ships is a product decision, and silence or `AUTORUN_FULL` does not delegate it (`SKILL.md` § Modes). The chain presents the run view's Design Select section (`reference/visuals.md` § The Run View) with the row's recommendation and waits; only a grant that explicitly delegates design choice lets the recommendation stand as `selected_by: delegated`. An unanswered selection checkpoints as `blocked-at-P5`, never a default pick. The comparison is evidence about the drawings, not user reaction: the demand↔reaction check below still applies to the selected design.
+
+Only the selected design goes on: the working slice, `friction-walkthrough` and all four Risk-Gate axes run on it alone, so the gate measures what will be built. Every other design is `rejected` with its reason in `visuals.json` and in `05-design.md` `## Rejected`.
+
+**Exit criterion:** exactly one design `selected`, `selected_by ∈ {user, delegated}`, every other design `rejected` with a reason, and the comparison recorded in `05-design.md` `## Findings` before the choice. A candidate that cannot meet a must-have AC is rejected for that reason, never selected with the AC reinterpreted (`SKILL.md` § Never). If the user rejects every candidate, return to the owning track with the objection; a changed goal reopens launch authority.
+
+### Risk Gate (four axes, parallel, on the selected design)
 
 | Row | Work | Pass criterion |
 |-----|------|----------------|
@@ -232,8 +246,9 @@ feature-lifecycle run goal="<feature description>"
   → Phase 5 Design           [parallel:Tech] architecture-decision + api-design? + schema-design?
                            ‖ [parallel:UX]   ux-direction → design-tokens
                                                     → [interaction-design ‖ microcopy ‖ motion-spec?]
-                                                    → design-file-extraction? → prototype
-                                                    → friction-walkthrough
+                                                    → design-file-extraction? → prototype(candidates)
+     [Design Select]         design-selection? → user selects one design   [no answer → blocked-at-P5]
+                                                    → prototype(working slice) → friction-walkthrough
      [Risk Gate]             failure-mode-analysis ‖ blast-radius-analysis
                            ‖ friction-walkthrough  ‖ security-review
                              └─ No-Go → first wrong decision (P1, P4 or P5 track)

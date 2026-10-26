@@ -54,6 +54,7 @@ Names are those of the `agent-skills` ecosystem this skill was extracted from. T
 | 5 | `friction-walkthrough` | `echo` | Run the cognitive walkthrough and the a11y simulation |
 | 5 | `i18n-strategy` | `polyglot` | Author the extraction strategy |
 | 5 | `mockup-to-code` | `pixel` | Translate the supplied mockup |
+| 5 | `design-selection` | — (no candidate claimed; a workspace design-review skill matches on the work) | Compare the candidate designs against the ACs, scope boundary, guardrails and drawn blast radius; recommend one and present the run view's Design Select section to the user |
 | 5 | `failure-mode-analysis` | `omen` | Run the FMEA and author the three mitigation layers |
 | 5 | `blast-radius-analysis` | `ripple` | Trace callers, data, and contracts outward from the change |
 | 5 | `security-review` | — (no candidate claimed; a workspace security-review skill matches on the work) | Walk every new entry point for authz, every new dependency, every newly persisted or transmitted field for its data class, and the regulatory exposure that follows |

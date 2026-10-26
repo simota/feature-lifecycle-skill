@@ -44,6 +44,7 @@ Status: SUCCESS | PARTIAL | BLOCKED | FAILED
 
 Completion sweep: [command run] — [N hits, each mapped to a RES-n, or `pre-existing`]
 Run record: .agents/feature-lifecycle/runs/[run-id]/ — run_record_committed: [true | false]
+Run view: [dir]/run.html — [source digest], or `not rendered: [check refusal]`
 Checkpoint: [resume point, on any non-ship exit]
 ```
 
@@ -55,7 +56,7 @@ A prohibited outcome is `held` only with evidence that it did not occur. `unveri
 |---------|---------|--------------|
 | Discovery summary | Decision-driving needs, source/status/support scope and unresolved hypotheses; selected goal and actual rejected alternatives | Phase 0-1 |
 | Spec & AC | Obligation → AC traceability; required/decision-critical and optional status; percentage as summary only | Phase 4 |
-| Design decisions | ADR(s) + API/schema deltas; UX direction + token/interaction summary | Phase 5 |
+| Design decisions | The selected design, who selected it, and the rejected candidates with their reasons; ADR(s) + API/schema deltas; UX direction + token/interaction summary | Phase 5 |
 | Risk-Gate verdict | Four-axis result (failure-mode RPN / blast radius / friction + a11y / security exposure) and any Conditional-Go conditions | Phase 5 gate |
 | Engine roster | Probe result per CLI, the `build`/`judge`/`breadth` bindings, any rebinding with its reason, `engine_independence: model \| context-only`, `simulated_voices`, and the per-engine spend sub-ledger | Resolved before the first spawn |
 | Loop iterations | **`runner: codex \| claude-code \| agy`** (the CLI that resolved to `build`) + the envelope it was scored against, iteration count, cost per task, convergence reason, circuit-breaker status, loop-precondition verdict, `project_local_fallback: true \| false` | Phase 6 |
@@ -65,6 +66,7 @@ A prohibited outcome is `held` only with evidence that it did not occur. `unveri
 | Measurement contract | The metric or qualitative observation, supported prediction (otherwise unmeasured), window and reader — and its `hypothesis-open` residual. Never marked closed by the run that opened it | Phase 4 → Ship |
 | Ship status | PR + release/rollback plan; `rollback_verified: true \| declared-impossible(reason)`; required recovery evidence, compensating-control tests and explicit risk acceptance where impossible; cumulative budget vs ceiling | Ship |
 | Run record | The run-record path and `run_record_committed`. Every number above is a summary of a phase document under it; without the path the report is a set of figures nobody can go behind | `reference/run-record.md` |
+| Run view | Where `run.html` was written and its source digest: phases, gates and re-entries, artifact flow, design diagrams and screen mocks on one page | `reference/visuals.md` |
 
 On **any** non-ship exit — budget ceiling, Risk-Gate No-Go, acceptance-verification fail past the re-entry cap, engine unavailable with no answer — the Delivery Report still emits, with best-so-far per phase, the residual gap, and the resumable checkpoint. Never a silent stop.
 
@@ -72,12 +74,12 @@ On **any** non-ship exit — budget ceiling, Risk-Gate No-Go, acceptance-verific
 
 | Profile | Phases active | Agent count | Approx cost |
 |---------|---------------|-------------|-------------|
-| Lite (no UI, spec scope Lite) | 1, 2, 3, 4, 5-Tech, 5-Gate, 6, Verify, Ship | 16-24 | Low |
-| Standard (UI, spec scope Standard) | All | 23-37 | Medium |
-| Full (greenfield, spec scope Full) | All, with `scope-cutting`, `formal-spec`, `design-file-extraction` and `i18n-strategy` running | 27-36 | High |
+| Lite (no UI, spec scope Lite) | 1, 2, 3, 4, 5-Tech, 5-Select?, 5-Gate, 6, Verify, Ship | 16-25 | Low |
+| Standard (UI, spec scope Standard) | All | 23-38 | Medium |
+| Full (greenfield, spec scope Full) | All, with `scope-cutting`, `formal-spec`, `design-file-extraction` and `i18n-strategy` running | 27-37 | High |
 | Autonomous bootstrap (Phase 0 added) | + `project-scan` + `goal-proposal` + `goal-scoring` + the conditional signal rows and `advisory-check` as available | +3-8 over base | +10-20% over base |
 
-**How the counts are derived.** One agent per roster row that runs (`reference/phase-contracts.md`, `reference/loop-engine.md` § In-Loop Roster and Spawn Sequence), with one loop cycle. The low end is the profile's required rows — for Lite: `evidence-validation`, `option-generation`, `deliberation`, `spec-authoring`, `measurement-contract`, `architecture-decision`, the three non-UX Risk-Gate rows, `implementation`, `code-review`, `test-authoring`, `acceptance-verification` and the three Ship rows (16); Standard adds the six required UX rows and `frontend-implementation`. The high end adds every conditional row the profile can trigger, `loop-driver` included (a project-local runner is installed); a conditional row such as `formal-spec`, `design-file-extraction` or `i18n-strategy` runs in any profile whose condition holds — the Full row names them because a greenfield Full run is assumed to meet their conditions. Two things the count leaves out: `deliberation` is one row run as three voice spawns, and each further loop cycle re-spawns that cycle's in-loop rows (3-7). The counts are derived from the rosters, not measured; recount them when a roster row is added or removed.
+**How the counts are derived.** One agent per roster row that runs (`reference/phase-contracts.md`, `reference/loop-engine.md` § In-Loop Roster and Spawn Sequence), with one loop cycle. The low end is the profile's required rows — for Lite: `evidence-validation`, `option-generation`, `deliberation`, `spec-authoring`, `measurement-contract`, `architecture-decision`, the three non-UX Risk-Gate rows, `implementation`, `code-review`, `test-authoring`, `acceptance-verification` and the three Ship rows (16); Standard adds the six required UX rows and `frontend-implementation`. The high end adds every conditional row the profile can trigger, `loop-driver` and `design-selection` included (a project-local runner is installed; the tracks drew ≥2 candidate designs); a conditional row such as `formal-spec`, `design-file-extraction` or `i18n-strategy` runs in any profile whose condition holds — the Full row names them because a greenfield Full run is assumed to meet their conditions. Two things the count leaves out: `deliberation` is one row run as three voice spawns, and each further loop cycle re-spawns that cycle's in-loop rows (3-7). The counts are derived from the rosters, not measured; recount them when a roster row is added or removed.
 
 The agent counts are engine-agnostic; the **cost** is not. A run spread across three CLIs spends against three pricing models, so the envelope carries a per-engine sub-ledger and a single mixed total is never quoted as the figure (`reference/engine-roster.md` § Cost and Recording). A roster that degraded to one engine changes the cost shape, not the agent count — which is why the roster is reported next to the spend rather than instead of it.
 
@@ -85,7 +87,7 @@ The historical profile assumes Phase 0 adds roughly 10-15 minutes; this is an un
 
 ## Run-Level Budget Envelope
 
-The loop's cost-per-task breaker bounds the *loop*. The *whole run* — Phase 0-6 + Ship, up to 44 agents at the Full autonomous profile, and 32-81 spawns once the deliberation voices and up to five further loop cycles are counted (derived from the rosters, not measured) — carries a **pre-declared budget envelope**, bound to the explicit launch grant alongside the agent/time/token estimate. An estimate does not authorize its own ceiling or a later increase.
+The loop's cost-per-task breaker bounds the *loop*. The *whole run* — Phase 0-6 + Ship, up to 45 agents at the Full autonomous profile, and 32-82 spawns once the deliberation voices and up to five further loop cycles are counted (derived from the rosters, not measured) — carries a **pre-declared budget envelope**, bound to the explicit launch grant alongside the agent/time/token estimate. An estimate does not authorize its own ceiling or a later increase.
 
 - `budget_ceiling` (tokens or agent-spawn count). The chain tracks cumulative spend across all phases and **hard-aborts with a resumable checkpoint** when the ceiling is reached, rather than running open-ended. The *proposed* ceiling presented for the grant defaults to the cost-profile estimate × 1.5; it binds only once the user grants it, and the user may set a different one at launch.
 - At **80% of the ceiling**, emit a warning. In `GUIDED`/`INTERACTIVE`, pause for a continue/abort decision; in `AUTORUN`/`AUTORUN_FULL`, log the warning and proceed to the ceiling — spend up to it was already granted.
@@ -116,6 +118,7 @@ What each gate guards against, merging the operational trigger (what happens now
 | Phase 3 split decision | `deliberation` | Pause for a human verdict; prevents an arbitrarily-resolved deadlock |
 | Weak / unmeasurable spec | "Done" is subjective; scope creeps | Phase 4 required/decision-critical coverage + L3 measurable, loop-consumable ACs |
 | Phase 4 obligation not traced | `spec-authoring` | Return to P4 or the intent owner; no unilateral demotion, omission or scope downgrade |
+| The first design drawn ships unexamined | One shape reaches the Risk Gate because nobody drew another, or the builder's taste picked it | Design Select: 2–4 whole candidate designs where the ACs allow, compared by `design-selection`, chosen by the user; a lone design records why no alternative existed |
 | Hidden architecture / blast-radius risk | A migration or contract change breaks neighbors post-merge | Risk Gate: `failure-mode-analysis` (high-RPN residuals = 0) + `blast-radius-analysis` (No-Go blocks) |
 | Risk Gate No-Go | `failure-mode-analysis` / `blast-radius-analysis` / `friction-walkthrough` / `security-review` | Return to the originating phase |
 | New attack surface, unowned data, or regulatory exposure shipped | A new entry point without an authz rule, a new persisted field without a data class, a new dependency nobody vetted | Risk Gate `security-review`: `unmitigated_high == 0`, and the row is required rather than conditional so it cannot be skipped by the judgment it exists to make |

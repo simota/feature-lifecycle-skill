@@ -1,0 +1,293 @@
+{
+  "version": 1,
+  "mocks": [
+    {
+      "id": "M-01",
+      "phase": "P2",
+      "title": "Option A: e-mail-only guest checkout",
+      "option": "A",
+      "intent": "The account wall becomes one e-mail field on the payment step.",
+      "viewport": "mobile",
+      "height": 520,
+      "css": ".bar{background:#1f3f66;color:#fff;padding:14px 16px;font:600 16px system-ui}.body{padding:16px;font:14px/1.5 system-ui;color:#1b1b1b}.field{border:1px solid #bbb;border-radius:6px;padding:10px;margin:6px 0 14px;color:#777}.btn{background:#1f3f66;color:#fff;border-radius:8px;padding:12px;text-align:center;font-weight:600}.muted{color:#666;font-size:12px}",
+      "before": {
+        "caption": "Sign-in required before payment",
+        "source": "src/checkout/Session.ts:12",
+        "html": "<div class='bar'>Checkout</div><div class='body'><p><b>Sign in to continue</b></p><div class='field'>E-mail</div><div class='field'>Password</div><div class='btn'>Sign in</div><p class='muted'>New here? Create an account</p></div>"
+      },
+      "after": {
+        "html": "<div class='bar'>Checkout</div><div class='body'><p><b>Where should we send your receipt?</b></p><div class='field'>you@example.com</div><div class='btn'>Continue to payment</div><p class='muted'>Have an account? Sign in</p></div>"
+      }
+    },
+    {
+      "id": "M-02",
+      "phase": "P2",
+      "title": "Option B: account created silently after payment",
+      "option": "B",
+      "intent": "Same first step as A; an account is created behind the receipt.",
+      "viewport": "mobile",
+      "height": 520,
+      "css": ".bar{background:#1f3f66;color:#fff;padding:14px 16px;font:600 16px system-ui}.body{padding:16px;font:14px/1.5 system-ui;color:#1b1b1b}.ok{background:#e8f3ec;border-radius:8px;padding:12px;margin-bottom:12px}.muted{color:#666;font-size:12px}",
+      "after": {
+        "caption": "Receipt after payment",
+        "html": "<div class='bar'>Thank you</div><div class='body'><div class='ok'><b>Order #10482 is confirmed</b></div><p>We created an account for you@example.com so you can track this order.</p><p class='muted'>Set a password any time.</p></div>"
+      }
+    },
+    {
+      "id": "M-03",
+      "phase": "P5",
+      "title": "Payment step with the guest e-mail field",
+      "option": "A",
+      "acs": [
+        "AC-01",
+        "AC-03"
+      ],
+      "intent": "One field, then payment; signing in stays available but secondary.",
+      "guardrails": "No pre-ticked marketing opt-in; no account creation; no second form before payment.",
+      "viewport": "mobile",
+      "height": 560,
+      "css": ".bar{background:#1f3f66;color:#fff;padding:14px 16px;font:600 16px system-ui}.body{padding:16px;font:14px/1.5 system-ui;color:#1b1b1b}.field{border:1px solid #bbb;border-radius:6px;padding:10px;margin:6px 0 14px;color:#777}.btn{background:#1f3f66;color:#fff;border-radius:8px;padding:12px;text-align:center;font-weight:600}.link{color:#1f3f66;text-decoration:underline}.muted{color:#666;font-size:12px}.sheet{position:absolute;left:0;right:0;bottom:0;background:#fff;border-top:1px solid #ddd;border-radius:14px 14px 0 0;padding:16px;box-shadow:0 -6px 18px rgba(0,0,0,.12)}.dim{background:#00000040;position:absolute;inset:0}",
+      "before": {
+        "caption": "Sign-in wall",
+        "source": "src/checkout/Session.ts:12",
+        "html": "<div class='bar'>Checkout</div><div class='body'><p><b>Sign in to continue</b></p><div class='field'>E-mail</div><div class='field'>Password</div><div class='btn'>Sign in</div></div>"
+      },
+      "after": {
+        "caption": "Inline field on the payment step",
+        "html": "<div class='bar'>Payment</div><div class='body'><p><b>Receipt e-mail</b></p><div class='field'>you@example.com</div><div class='field'>Card number</div><div class='btn'>Pay $42.00</div><p class='muted'>Have an account? <span class='link'>Sign in</span></p></div>"
+      },
+      "alternatives": [
+        {
+          "caption": "Quieter: a sheet over the basket",
+          "html": "<div class='bar'>Basket</div><div class='body'><p>2 items · $42.00</p></div><div class='dim'></div><div class='sheet'><p><b>Receipt e-mail</b></p><div class='field'>you@example.com</div><div class='btn'>Continue to payment</div></div>"
+        }
+      ]
+    },
+    {
+      "id": "M-04",
+      "phase": "P5",
+      "title": "Receipt page reached from the e-mail link",
+      "option": "A",
+      "acs": [
+        "AC-02"
+      ],
+      "intent": "The signed link opens the order without signing in.",
+      "guardrails": "No prompt to create an account before the order is shown.",
+      "viewport": "mobile",
+      "height": 520,
+      "css": ".bar{background:#1f3f66;color:#fff;padding:14px 16px;font:600 16px system-ui}.body{padding:16px;font:14px/1.5 system-ui;color:#1b1b1b}.field{border:1px solid #bbb;border-radius:6px;padding:10px;margin:6px 0 14px;color:#777}.btn{background:#1f3f66;color:#fff;border-radius:8px;padding:12px;text-align:center;font-weight:600}.link{color:#1f3f66;text-decoration:underline}.muted{color:#666;font-size:12px}.sheet{position:absolute;left:0;right:0;bottom:0;background:#fff;border-top:1px solid #ddd;border-radius:14px 14px 0 0;padding:16px;box-shadow:0 -6px 18px rgba(0,0,0,.12)}.dim{background:#00000040;position:absolute;inset:0}",
+      "after": {
+        "caption": "New screen",
+        "html": "<div class='bar'>Order #10482</div><div class='body'><p><b>Arriving Thursday</b></p><p>2 items · $42.00</p><p class='muted'>Sent to you@example.com · link valid 30 days</p><div class='btn'>Track parcel</div></div>"
+      }
+    },
+    {
+      "id": "M-05",
+      "phase": "P5",
+      "title": "Dedicated guest step before payment",
+      "option": "A",
+      "acs": [
+        "AC-01"
+      ],
+      "intent": "A step of its own for the e-mail, then the payment form.",
+      "viewport": "mobile",
+      "height": 520,
+      "css": ".bar{background:#1f3f66;color:#fff;padding:14px 16px;font:600 16px system-ui}.body{padding:16px;font:14px/1.5 system-ui;color:#1b1b1b}.field{border:1px solid #bbb;border-radius:6px;padding:10px;margin:6px 0 14px;color:#777}.btn{background:#1f3f66;color:#fff;border-radius:8px;padding:12px;text-align:center;font-weight:600}.link{color:#1f3f66;text-decoration:underline}.muted{color:#666;font-size:12px}.sheet{position:absolute;left:0;right:0;bottom:0;background:#fff;border-top:1px solid #ddd;border-radius:14px 14px 0 0;padding:16px;box-shadow:0 -6px 18px rgba(0,0,0,.12)}.dim{background:#00000040;position:absolute;inset:0}",
+      "before": {
+        "caption": "Sign-in wall",
+        "source": "src/checkout/Session.ts:12",
+        "html": "<div class='bar'>Checkout</div><div class='body'><p><b>Sign in to continue</b></p><div class='field'>E-mail</div><div class='field'>Password</div><div class='btn'>Sign in</div></div>"
+      },
+      "after": {
+        "caption": "Step 1 of 2",
+        "html": "<div class='bar'>Checkout · 1 of 2</div><div class='body'><p><b>Where should we send your receipt?</b></p><div class='field'>you@example.com</div><div class='btn'>Continue</div></div>"
+      }
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "D-01",
+      "phase": "P5",
+      "kind": "architecture",
+      "title": "Guest order path (ADR-001)",
+      "intent": "A signed order token replaces the account lookup; nothing new is persisted for the guest.",
+      "acs": [
+        "AC-02",
+        "AC-04"
+      ],
+      "direction": "LR",
+      "nodes": [
+        {
+          "id": "buyer",
+          "label": "Guest buyer",
+          "type": "actor"
+        },
+        {
+          "id": "checkout",
+          "label": "Checkout UI",
+          "type": "component",
+          "change": "changed",
+          "source": "src/checkout/Session.ts:12"
+        },
+        {
+          "id": "orders",
+          "label": "Order service",
+          "type": "component",
+          "change": "changed"
+        },
+        {
+          "id": "token",
+          "label": "Order token signer",
+          "type": "component",
+          "change": "new"
+        },
+        {
+          "id": "db",
+          "label": "orders table",
+          "type": "store"
+        },
+        {
+          "id": "users",
+          "label": "users table",
+          "type": "store"
+        },
+        {
+          "id": "mail",
+          "label": "Receipt e-mail",
+          "type": "external",
+          "change": "changed"
+        }
+      ],
+      "edges": [
+        {
+          "from": "buyer",
+          "to": "checkout",
+          "label": "e-mail + card"
+        },
+        {
+          "from": "checkout",
+          "to": "orders",
+          "label": "place order",
+          "change": "changed"
+        },
+        {
+          "from": "orders",
+          "to": "db"
+        },
+        {
+          "from": "orders",
+          "to": "users",
+          "label": "account lookup",
+          "change": "removed"
+        },
+        {
+          "from": "orders",
+          "to": "token",
+          "change": "new"
+        },
+        {
+          "from": "token",
+          "to": "mail",
+          "label": "signed link",
+          "change": "new"
+        }
+      ]
+    },
+    {
+      "id": "D-02",
+      "phase": "P5",
+      "kind": "architecture",
+      "title": "Guest session path",
+      "acs": [
+        "AC-02"
+      ],
+      "intent": "A guest session row keeps the order reachable; the receipt link resumes the session.",
+      "direction": "LR",
+      "nodes": [
+        {
+          "id": "buyer",
+          "label": "Guest buyer",
+          "type": "actor"
+        },
+        {
+          "id": "step",
+          "label": "Guest step",
+          "type": "component",
+          "change": "new"
+        },
+        {
+          "id": "orders",
+          "label": "Order service",
+          "type": "component",
+          "change": "changed"
+        },
+        {
+          "id": "sessions",
+          "label": "guest_sessions table",
+          "type": "store",
+          "change": "new"
+        },
+        {
+          "id": "mail",
+          "label": "Receipt e-mail",
+          "type": "external",
+          "change": "changed"
+        }
+      ],
+      "edges": [
+        {
+          "from": "buyer",
+          "to": "step",
+          "label": "e-mail"
+        },
+        {
+          "from": "step",
+          "to": "orders",
+          "change": "new"
+        },
+        {
+          "from": "orders",
+          "to": "sessions",
+          "label": "persist",
+          "change": "new"
+        },
+        {
+          "from": "orders",
+          "to": "mail",
+          "label": "session link",
+          "change": "changed"
+        }
+      ]
+    }
+  ],
+  "designs": [
+    {
+      "id": "DS-A",
+      "title": "Inline e-mail on the payment step",
+      "status": "selected",
+      "selected_by": "user",
+      "summary": "One form before payment; a signed, expiring token in the receipt link.",
+      "mocks": [
+        "M-03",
+        "M-04"
+      ],
+      "diagrams": [
+        "D-01"
+      ],
+      "reason": "Meets AC-03 with no new table; the judge ranked it first on scope and blast radius."
+    },
+    {
+      "id": "DS-B",
+      "title": "Dedicated guest step",
+      "status": "rejected",
+      "summary": "A step of its own for the e-mail; a guest session row behind the receipt link.",
+      "mocks": [
+        "M-05"
+      ],
+      "diagrams": [
+        "D-02"
+      ],
+      "reason": "Adds guest_sessions, persisted state outside the scope boundary, and a second form before payment (AC-03)."
+    }
+  ]
+}
